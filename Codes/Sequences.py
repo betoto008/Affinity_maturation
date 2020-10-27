@@ -17,8 +17,10 @@ class Sequence():
 		self.sequence = parent
 		self.pos_mut = np.random.randint(9)
 		self.tree_position = 1 # 0 = internal ; 1 = external
+		self.hamming_distance = hamming_distance('aaaaaaaaa', self.sequence)
 		if not(Master_Seq):
 			self.create_sequence()
+
 
 	def create_sequence(self):
 		""" This function will create a new mutations and give an energy value to the new sequence according to the Energy_Matrix. """
@@ -50,4 +52,6 @@ def generate_newick_format(filename):
 
 
 
-
+def hamming_distance(chaine1, chaine2):
+    return sum(c1 != c2 for c1, c2 in zip(chaine1, chaine2))
+    
