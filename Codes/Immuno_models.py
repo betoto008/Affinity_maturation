@@ -8,22 +8,59 @@ import scipy.special as sc
 
 class Sequence():
 	"""docstring for Sequence"""
-	def __init__(self, seq_id, parent, parent_id = 0, Master_Seq = False):
+	def __init__(self, seq_id, master_sequence, energy_parent, complementary_sequence, Energy_Matrix, parent,  parent_id = 0, Master_Seq = False):
 		super(Sequence, self).__init__()
 
 		#A given Sequence object has the following attributes
 		self.id = seq_id
-		self.Alphabet = ['a', 'b', 'c', 'd']
+		self.Alphabet = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't']
 		self.parent = parent
 		self.parent_id = parent_id
+		self.master_sequence = master_sequence
+		self.complementary_sequence = complementary_sequence
 		self.active = False
 		self.clone_size = 1
-		self.energy = 1
+		self.energy = 0
+		self.energy_parent = energy_parent
+		self.delta_energy = 0
 		self.sequence = parent
 		self.pos_mut = 0
 		self.tree_position = 1 # 0 = internal ; 1 = external
 		self.hamming_distance = 0
+		if not(Master_Seq):
+			self.mutate_sequence(Energy_Matrix = Energy_Matrix)
 
+	def calculate_delta_energy(self, Energy_Matrix, old_letter, new_letter):
+
+		M = Energy_Matrix
+
+		list_comp_seq = list(self.complementary_sequence)
+
+		pos_new_letter = np.where(np.isin(self.Alphabet,new_letter))[0][0]
+		pos_old_letter = np.where(np.isin(self.Alphabet,old_letter))[0][0]
+
+		pos_comp_seq = np.where(np.isin(self.Alphabet,list_comp_seq[self.pos_mut]))[0][0]
+
+		self.delta_energy = M[pos_comp_seq][pos_new_letter]-M[pos_comp_seq][pos_old_letter]
+		self.energy = self.energy_parent + self.delta_energy
+
+
+	def mutate_sequence(self, Energy_Matrix):
+		""" This function will create a new mutations and give an energy value to the new sequence according to the Energy_Matrix. """
+		self.pos_mut = np.random.randint(9)
+		list_seq = list(self.sequence)
+		old_letter = self.sequence[self.pos_mut]
+		self.Alphabet.remove(old_letter)
+		new_letter = np.random.choice(self.Alphabet)
+		list_seq[self.pos_mut] = new_letter
+		self.sequence = "".join(list_seq)
+		self.hamming_distance = hamming_distance(self.master_sequence, self.sequence)
+		self.Alphabet = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't']
+		self.calculate_delta_energy(Energy_Matrix = Energy_Matrix, old_letter = old_letter, new_letter = new_letter)
+	
+
+
+		#Ask Michael about the best way to produce the energy
 class Stochastic_simulation():
 	"""docstring for Stochastic_simulation"""
 	def __init__(self, Sequences, n_linages, T, U, gamma, nu, R, beta, master_Sequence_energy):
@@ -51,7 +88,7 @@ class Stochastic_simulation():
 		# fill with Bcell activation and proliferation
 		for i in range(1, self.n_linages+1):
 			#Activation
-			self.probabilities[(2*i)-1] = (self.antigen_time_series[-1]/(self.antigen_time_series[-1]+np.exp(self.master_Sequence_energy + self.Sequences[i-1].hamming_distance)))*(1-self.Sequences[i-1].active)
+			self.probabilities[(2*i)-1] = (self.antigen_time_series[-1]/(self.antigen_time_series[-1]+np.exp(self.master_Sequence_energy + self.Sequences[i-1].energy)))*(1-self.Sequences[i-1].active)
 			#Proliferation
 			self.probabilities[(2*i)] = self.nu*(self.linages_time_series[i-1,-1] - 1)
 
@@ -149,7 +186,7 @@ class Stochastic_simulation():
 		ax.tick_params(labelsize = 20)
 		#ax.legend(loc = 0, fontsize = 20)
 
-	def hist_sequences(self, Sequences, ax):
+	def hist_sequences_hamming_distance(self, Sequences, ax):
 
 		rho_array = np.logspace(0, np.log10(max(self.antigen_time_series)), 5)
 		colors = plt.cm.Reds(np.linspace(0,1,len(rho_array)))
@@ -169,22 +206,28 @@ class Stochastic_simulation():
 		ax.set_ylabel(r'Number of linages', fontsize = 20)
 		ax.tick_params(labelsize = 20)
 		ax.legend(loc = 0, fontsize = 20)
+
+	def hist_sequences_energy(self, Sequences, ax):
+
+		rho_array = np.logspace(0, np.log10(max(self.antigen_time_series)), 5)
+		colors = plt.cm.Reds(np.linspace(0,1,len(rho_array)))
+		data_energies = ax.hist([Sequences[i].energy for i in range(int(len(Sequences)))], bins = 20, align = 'left', label = r'$S(d)$', color = 'lightsteelblue', alpha = 0.5)
+		#ax.plot(data_energies[1][0:-1], sc.comb(9, data_energies[1][0:-1])*((20-1)**data_energies[1][0:-1]), linewidth = 4 , color = 'lightsteelblue', alpha = 0.6)
+
+		ax.hist([self.Sequences[i].energy for i in range(int(len(self.Sequences)))], bins = 20, align = 'left', label = r'$US(d)$', color = 'indigo', alpha = 0.6)
+		#ax.plot(data_energies[1][0:-1], self.U*sc.comb(9, data_energies[1][0:-1])*((20-1)**data_energies[1][0:-1]), linewidth = 4 , color = 'indigo', alpha = 0.6)
+
+		ax.hist([self.Sequences[i].energy for i in range(int(len(self.Sequences))) if self.Sequences[i].active], bins = 20, align = 'left', label = r'Activated Linages', color = 'tab:red', alpha = 0.8)
+		#for i, rho in enumerate(rho_array):
+		#	ax.plot(data_energies[1][0:-1], self.U*sc.comb(9, data_energies[1][0:-1].astype(int))*((20-1)**data_energies[1][0:-1])*(1/(1+np.exp(self.master_Sequence_energy + data_energies[1][0:-1] - np.log(rho)))) , color = colors[i], linestyle = 'dashed', linewidth = 3)
+
+		#ax.set_ylim(0.1, 2e5)    
+		ax.set_yscale('log')
+		ax.set_xlabel(r'Energy $\epsilon$', fontsize = 20)
+		ax.set_ylabel(r'Number of linages', fontsize = 20)
+		ax.tick_params(labelsize = 20)
+		ax.legend(loc = 0, fontsize = 20)
 		
-def mutate_sequence(Sequence):
-		""" This function will create a new mutations and give an energy value to the new sequence according to the Energy_Matrix. """
-		Alphabet = ['a', 'b', 'c', 'd']
-		Sequence.pos_mut = np.random.randint(9)
-		list_seq = list(Sequence.sequence)
-		old_letter = Sequence.sequence[Sequence.pos_mut]
-		Alphabet.remove(old_letter)
-		new_letter = np.random.choice(Alphabet)
-		list_seq[Sequence.pos_mut] = new_letter
-		Sequence.sequence = "".join(list_seq)
-		Sequence.hamming_distance = hamming_distance('aaaaaaaaa', Sequence.sequence)
-		Alphabet = ['a', 'b', 'c', 'd']
-
-		#Ask Michael about the best way to produce the energy
-
 def print_raw_file(Sequences, filename):
 
 	file = open(filename, 'w+')
@@ -202,12 +245,64 @@ def generate_newick_format(filename):
 def hamming_distance(chaine1, chaine2):
 
     return sum(c1 != c2 for c1, c2 in zip(chaine1, chaine2))
-    
+
+def find_complementary_seq(sequence, Energy_Matrix):
+
+	M = Energy_Matrix
+	Alphabet = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't']
+	list_seq = list(sequence)
+	list_comp_seq = []
+	for i in list_seq:
+		pos_i = np.where(np.isin(Alphabet,i))[0][0]
+		list_comp_seq.append(Alphabet[np.where(np.isin(M[pos_i],min(M[pos_i])))[0][0]])
+	comp_seq = "".join(list_comp_seq)
+	return comp_seq
+
+def calculate_energy(Energy_Matrix, seq1, seq2):
+
+	M = Energy_Matrix
+	Alphabet = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't']
+	list_seq1 = list(seq1)
+	list_seq2 = list(seq2)
+	Energy = 0
+	for i in range(9):
+		pos_i = np.where(np.isin(Alphabet,list_seq1[i]))[0][0]
+		for j in range(9):
+			pos_j = np.where(np.isin(Alphabet,list_seq2[j]))[0][0]
+			Energy += M[pos_i][pos_j]
+
 def generate_Sequences(n_seq):
 
-	Master_Sequence = Sequence(seq_id = 0, parent = 'aaaaaaaaa', Master_Seq=True)
+	M = [[-1.06,0.19,-0.23,0.16,-0.08,0.06,0.08,0.04,0.00,-0.08,0.19,-0.02,0.05,0.13,0.69,0.03,-0.19,0.24,0.71,0.00],
+ 	[0.19,0.04,-0.42,-0.28,-0.20,-0.14,-0.67,-0.13,0.25,0.19,0.19,0.14,0.46,0.08,0.44,0.65,0.99,0.31,0.00,-0.34],
+	[-0.23,-0.42,-0.44,-0.19,-0.30,-0.2,-0.16,0.00,0.03,0.38,0.31,0.29,0.49,0.18,0.27,0.39,-0.16,0.41,0.44,0.20],
+	[0.16,-0.28,-0.19,-0.22,-0.41,-0.25,0.02,0.11,-0.22,0.25,0.14,0.21,0.36,0.53,0.35,0.59,0.49,0.42,0.36,0.25],
+	[-0.08,-0.20,-0.30,-0.41,-0.27,-0.29,-0.09,0.24,-0.01,0.23,0.20,0.25,0.26,0.30,0.43,0.67,0.16,0.35,0.19,0.42],
+	[0.06,-0.14,-0.22,-0.25,-0.29,-0.29,-0.07,0.02,-0.10,0.16,0.25,0.18,0.24,0.50,0.34,0.58,0.19,0.30,0.44,0.09],
+	[0.08,-0.67,-0.16,0.02,-0.09,-0.07,-0.12,-0.04,-0.09,-0.18,0.22,0.34,0.08,0.06,0.29,0.24,-0.12,-0.16,0.22,-0.28],
+	[0.04,-0.13,0.00,0.11,0.24,0.02,-0.04,-0.06,0.09,0.14,0.13,0.09,-0.20,-0.20,-0.10,0.00,-0.34,-0.25,-0.21,-0.33],
+	[0.00,0.25,0.03,-0.22,-0.01,-0.10,-0.09,0.09,-0.13,-0.07,-0.09,-0.06,0.08,0.28,0.26,0.12,0.34,0.43,0.14,0.10],
+	[-0.08,0.19,0.38,0.25,0.23,0.16,0.18,0.14,-0.07,-0.38,-0.26,-0.16,-0.06,-0.14,0.25,-0.22,0.20,-0.04,0.11,-0.11],
+	[0.19,0.19,0.31,0.14,0.20,0.25,0.22,0.13,-0.09,-0.26,0.03,-0.08,-0.14,-0.11,0.00,-0.29,-0.19,-0.35,-0.09,-0.07],
+	[-0.02,0.14,0.29,0.21,0.25,0.18,0.34,0.09,-0.06,-0.16,-0.08,-0.20,-0.14,-0.14,0.26,-0.31,-0.05,0.17,-0.13,0.01],
+	[0.05,0.46,0.49,0.36,0.26,0.24,0.08,-0.20,0.08,-0.06,-0.14,-0.14,0.29,-0.25,-0.17,-0.17,-0.02,-0.52,-0.38,-0.42],
+	[0.13,0.08,0.18,0.53,0.30,0.50,0.06,-0.20,0.28,-0.14,-0.11,-0.14,-0.25,-0.53,-0.32,-0.30,-0.24,-0.14,-0.33,-0.18],
+	[0.69,0.44,0.27,0.35,0.43,0.34,0.29,-0.10,0.26,0.25,0.00,-0.26,-0.17,-0.32,-0.03,-0.15,-0.45,-0.74,-0.97,-0.10],
+	[0.03,0.65,0.39,0.59,0.67,0.58,0.24,0.00,0.12,-0.22,-0.29,-0.31,-0.17,-0.30,-0.15,0.04,-0.39,-0.72,-0.76,0.04],
+	[-0.19,0.99,-0.16,0.49,0.16,0.19,-0.12,-0.34,0.34,0.20,-0.19,-0.05,-0.02,-0.24,-0.45,-0.39,-0.29,-0.12,0.22,-0.21],
+	[0.24,0.31,0.41,0.42,0.35,0.30,-0.16,-0.25,0.43,-0.04,-0.35,0.17,-0.52,-0.14,-0.74,-0.72,-0.12,0.11,0.75,-0.38],
+	[0.71,0.00,0.44,0.36,0.19,0.44,0.22,-0.21,0.14,0.11,-0.09,-0.13,-0.38,-0.33,-0.97,-0.76,0.22,0.75,0.25,0.11],
+	[0.00,-0.34,0.20,0.25,0.42,0.09,-0.28,-0.33,0.10,-0.11,-0.07,0.01,-0.42,-0.18,-0.10,0.04,-0.21,-0.38,0.11,0.26]]
+
+	Alphabet = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't']
+	master_sequence = "".join(np.random.choice(Alphabet, 9))
+
+	complementary_sequence = find_complementary_seq(sequence = master_sequence , Energy_Matrix =  M)
+	master_sequence_energy = calculate_energy(Energy_Matrix = M, seq1 = master_sequence, seq2 = complementary_sequence)
+
+	Master_Sequence = Sequence(seq_id = 0, parent = master_sequence, energy_parent = master_sequence_energy, Master_Seq=True, master_sequence = master_sequence, complementary_sequence = complementary_sequence, Energy_Matrix = M)
 	Sequences = np.array([Master_Sequence])
-	sequences = np.array(['aaaaaaaaa'])
+	sequences = np.array([master_sequence])
 	zero_date = datetime(2000, 1, 1)
 
 	file = open('../Text_files/file_parent_daughter2.txt', 'w+')
@@ -221,11 +316,11 @@ def generate_Sequences(n_seq):
 	file_1.write("\n")
 	n_seq = n_seq
 	for i in range(1, n_seq):
-	    succ = False
+	    succ = False 
 	    while(succ == False):
 	        parent = np.random.choice(Sequences)
-	        new_seq = Sequence(seq_id = i, parent = parent.sequence, parent_id = parent.id)
-	        mutate_sequence(new_seq)
+	        new_seq = Sequence(seq_id = i, parent = parent.sequence, energy_parent = parent.energy,  parent_id = parent.id, master_sequence = master_sequence, complementary_sequence = complementary_sequence, Energy_Matrix = M)
+	        #check if the new sequence is already in the tree. Here we can check for other condicions like that the energy is higher than the parent.
 	        if not(np.isin(new_seq.sequence, sequences)):
 	            parent.tree_position = 0    
 	            Sequences = np.append(Sequences, new_seq)
