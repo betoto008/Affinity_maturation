@@ -5,6 +5,7 @@ from io import StringIO
 from matplotlib.lines import Line2D
 from datetime import datetime, timedelta
 import scipy.special as sc
+import seaborn as sns
 
 class Sequence():
 	"""docstring for Sequence"""
@@ -29,6 +30,8 @@ class Sequence():
 		self.hamming_distance = 0
 		if not(Master_Seq):
 			self.mutate_sequence(Energy_Matrix = Energy_Matrix)
+		if (Master_Seq):
+			self.energy = self.energy_parent
 
 	def calculate_delta_energy(self, Energy_Matrix, old_letter, new_letter):
 
@@ -58,9 +61,8 @@ class Sequence():
 		self.Alphabet = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't']
 		self.calculate_delta_energy(Energy_Matrix = Energy_Matrix, old_letter = old_letter, new_letter = new_letter)
 	
-
-
 		#Ask Michael about the best way to produce the energy
+
 class Stochastic_simulation():
 	"""docstring for Stochastic_simulation"""
 	def __init__(self, Sequences, n_linages, T, U, gamma, nu, R, beta, master_Sequence_energy):
@@ -150,6 +152,36 @@ class Stochastic_simulation():
 		for i in range(self.T):
 			self.gillespie_step()
 
+	def plot_energy_matrix(self, ax):
+
+		M = [[-1.06,0.19,-0.23,0.16,-0.08,0.06,0.08,0.04,0.00,-0.08,0.19,-0.02,0.05,0.13,0.69,0.03,-0.19,0.24,0.71,0.00],
+	 	[0.19,0.04,-0.42,-0.28,-0.20,-0.14,-0.67,-0.13,0.25,0.19,0.19,0.14,0.46,0.08,0.44,0.65,0.99,0.31,0.00,-0.34],
+		[-0.23,-0.42,-0.44,-0.19,-0.30,-0.2,-0.16,0.00,0.03,0.38,0.31,0.29,0.49,0.18,0.27,0.39,-0.16,0.41,0.44,0.20],
+		[0.16,-0.28,-0.19,-0.22,-0.41,-0.25,0.02,0.11,-0.22,0.25,0.14,0.21,0.36,0.53,0.35,0.59,0.49,0.42,0.36,0.25],
+		[-0.08,-0.20,-0.30,-0.41,-0.27,-0.29,-0.09,0.24,-0.01,0.23,0.20,0.25,0.26,0.30,0.43,0.67,0.16,0.35,0.19,0.42],
+		[0.06,-0.14,-0.22,-0.25,-0.29,-0.29,-0.07,0.02,-0.10,0.16,0.25,0.18,0.24,0.50,0.34,0.58,0.19,0.30,0.44,0.09],
+		[0.08,-0.67,-0.16,0.02,-0.09,-0.07,-0.12,-0.04,-0.09,-0.18,0.22,0.34,0.08,0.06,0.29,0.24,-0.12,-0.16,0.22,-0.28],
+		[0.04,-0.13,0.00,0.11,0.24,0.02,-0.04,-0.06,0.09,0.14,0.13,0.09,-0.20,-0.20,-0.10,0.00,-0.34,-0.25,-0.21,-0.33],
+		[0.00,0.25,0.03,-0.22,-0.01,-0.10,-0.09,0.09,-0.13,-0.07,-0.09,-0.06,0.08,0.28,0.26,0.12,0.34,0.43,0.14,0.10],
+		[-0.08,0.19,0.38,0.25,0.23,0.16,0.18,0.14,-0.07,-0.38,-0.26,-0.16,-0.06,-0.14,0.25,-0.22,0.20,-0.04,0.11,-0.11],
+		[0.19,0.19,0.31,0.14,0.20,0.25,0.22,0.13,-0.09,-0.26,0.03,-0.08,-0.14,-0.11,0.00,-0.29,-0.19,-0.35,-0.09,-0.07],
+		[-0.02,0.14,0.29,0.21,0.25,0.18,0.34,0.09,-0.06,-0.16,-0.08,-0.20,-0.14,-0.14,0.26,-0.31,-0.05,0.17,-0.13,0.01],
+		[0.05,0.46,0.49,0.36,0.26,0.24,0.08,-0.20,0.08,-0.06,-0.14,-0.14,0.29,-0.25,-0.17,-0.17,-0.02,-0.52,-0.38,-0.42],
+		[0.13,0.08,0.18,0.53,0.30,0.50,0.06,-0.20,0.28,-0.14,-0.11,-0.14,-0.25,-0.53,-0.32,-0.30,-0.24,-0.14,-0.33,-0.18],
+		[0.69,0.44,0.27,0.35,0.43,0.34,0.29,-0.10,0.26,0.25,0.00,-0.26,-0.17,-0.32,-0.03,-0.15,-0.45,-0.74,-0.97,-0.10],
+		[0.03,0.65,0.39,0.59,0.67,0.58,0.24,0.00,0.12,-0.22,-0.29,-0.31,-0.17,-0.30,-0.15,0.04,-0.39,-0.72,-0.76,0.04],
+		[-0.19,0.99,-0.16,0.49,0.16,0.19,-0.12,-0.34,0.34,0.20,-0.19,-0.05,-0.02,-0.24,-0.45,-0.39,-0.29,-0.12,0.22,-0.21],
+		[0.24,0.31,0.41,0.42,0.35,0.30,-0.16,-0.25,0.43,-0.04,-0.35,0.17,-0.52,-0.14,-0.74,-0.72,-0.12,0.11,0.75,-0.38],
+		[0.71,0.00,0.44,0.36,0.19,0.44,0.22,-0.21,0.14,0.11,-0.09,-0.13,-0.38,-0.33,-0.97,-0.76,0.22,0.75,0.25,0.11],
+		[0.00,-0.34,0.20,0.25,0.42,0.09,-0.28,-0.33,0.10,-0.11,-0.07,0.01,-0.42,-0.18,-0.10,0.04,-0.21,-0.38,0.11,0.26]]
+		sns.heatmap(np.flip(M, axis = 0), ax = ax, cmap=plt.cm.RdBu_r)
+		ax.set_title('MJ-Matrix', fontsize = 22)
+		ax.tick_params(labelsize = 20)
+		ax.set_xticklabels(['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't'])
+		ax.set_yticklabels(np.flip(['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't']));
+		cbar = ax.collections[0].colorbar
+		cbar.ax.tick_params(labelsize=18)
+
 	def plot_antigen_time(self, ax):
 
 		ax.plot(self.time_series, self.antigen_time_series, linewidth  = 4)
@@ -164,9 +196,9 @@ class Stochastic_simulation():
 		rho_array = np.logspace(0, np.log10(max(self.antigen_time_series)), 5)
 		colors = plt.cm.Reds(np.linspace(0,1,len(rho_array)))
 		for i, rho in enumerate(rho_array): 
-			ax.plot(np.array(range(9)), (1/(1+np.exp(self.master_Sequence_energy + np.array(range(9)) - np.log(rho)))), linewidth  = 4, color = colors[i], label = r'$\rho = %.0e$'%(rho))
+			ax.plot(np.linspace(-2,8,10), (1/(1+np.exp(self.master_Sequence_energy + np.linspace(-2,8,10) - np.log(rho)))), linewidth  = 4, color = colors[i], label = r'$\rho = %.0e$'%(rho))
 		ax.set_yscale('log')
-		ax.set_xlabel(r'Hamming Distance $d$', fontsize = 20)
+		ax.set_xlabel(r'Energy $\epsilon$', fontsize = 20)
 		ax.set_ylabel(r'Probability of binding $p_b$', fontsize = 20)
 		ax.tick_params(labelsize = 20)
 		ax.legend(loc = 0, fontsize = 20)
@@ -191,14 +223,14 @@ class Stochastic_simulation():
 		rho_array = np.logspace(0, np.log10(max(self.antigen_time_series)), 5)
 		colors = plt.cm.Reds(np.linspace(0,1,len(rho_array)))
 		data_distances = ax.hist([Sequences[i].hamming_distance for i in range(int(len(Sequences)))], bins = range(10), align = 'left', label = r'$S(d)$', color = 'lightsteelblue', alpha = 0.5)
-		ax.plot(data_distances[1][0:-1], sc.comb(9, data_distances[1][0:-1])*((4-1)**data_distances[1][0:-1]), linewidth = 4 , color = 'lightsteelblue', alpha = 0.6)
+		ax.plot(data_distances[1][0:-1], sc.comb(9, data_distances[1][0:-1])*((20-1)**data_distances[1][0:-1]), linewidth = 4 , color = 'lightsteelblue', alpha = 0.6)
 
 		ax.hist([self.Sequences[i].hamming_distance for i in range(int(len(self.Sequences)))], bins = range(10), align = 'left', label = r'$US(d)$', color = 'indigo', alpha = 0.6)
-		ax.plot(data_distances[1][0:-1], self.U*sc.comb(9, data_distances[1][0:-1])*((4-1)**data_distances[1][0:-1]), linewidth = 4 , color = 'indigo', alpha = 0.6)
+		ax.plot(data_distances[1][0:-1], self.U*sc.comb(9, data_distances[1][0:-1])*((20-1)**data_distances[1][0:-1]), linewidth = 4 , color = 'indigo', alpha = 0.6)
 
 		ax.hist([self.Sequences[i].hamming_distance for i in range(int(len(self.Sequences))) if self.Sequences[i].active], bins = range(10), align = 'left', label = r'Activated Linages', color = 'tab:red', alpha = 0.8)
 		for i, rho in enumerate(rho_array):
-			ax.plot(data_distances[1][0:-1], self.U*sc.comb(9, data_distances[1][0:-1].astype(int))*((4-1)**data_distances[1][0:-1])*(1/(1+np.exp(self.master_Sequence_energy + data_distances[1][0:-1] - np.log(rho)))) , color = colors[i], linestyle = 'dashed', linewidth = 3)
+			ax.plot(data_distances[1][0:-1], self.U*sc.comb(9, data_distances[1][0:-1].astype(int))*((20-1)**data_distances[1][0:-1])*(1/(1+np.exp(self.master_Sequence_energy + data_distances[1][0:-1] - np.log(rho)))) , color = colors[i], linestyle = 'dashed', linewidth = 3)
 
 		ax.set_ylim(0.1, 2e5)    
 		ax.set_yscale('log')
@@ -211,10 +243,10 @@ class Stochastic_simulation():
 
 		rho_array = np.logspace(0, np.log10(max(self.antigen_time_series)), 5)
 		colors = plt.cm.Reds(np.linspace(0,1,len(rho_array)))
-		data_energies = ax.hist([Sequences[i].energy for i in range(int(len(Sequences)))], bins = 20, align = 'left', label = r'$S(d)$', color = 'lightsteelblue', alpha = 0.5)
+		data_energies = ax.hist([Sequences[i].energy for i in range(int(len(Sequences)))], bins = 20, align = 'left', label = r'$S(\epsilon)$', color = 'lightsteelblue', alpha = 0.5)
 		#ax.plot(data_energies[1][0:-1], sc.comb(9, data_energies[1][0:-1])*((20-1)**data_energies[1][0:-1]), linewidth = 4 , color = 'lightsteelblue', alpha = 0.6)
 
-		ax.hist([self.Sequences[i].energy for i in range(int(len(self.Sequences)))], bins = 20, align = 'left', label = r'$US(d)$', color = 'indigo', alpha = 0.6)
+		ax.hist([self.Sequences[i].energy for i in range(int(len(self.Sequences)))], bins = 20, align = 'left', label = r'$US(\epsilon)$', color = 'indigo', alpha = 0.6)
 		#ax.plot(data_energies[1][0:-1], self.U*sc.comb(9, data_energies[1][0:-1])*((20-1)**data_energies[1][0:-1]), linewidth = 4 , color = 'indigo', alpha = 0.6)
 
 		ax.hist([self.Sequences[i].energy for i in range(int(len(self.Sequences))) if self.Sequences[i].active], bins = 20, align = 'left', label = r'Activated Linages', color = 'tab:red', alpha = 0.8)
@@ -227,6 +259,50 @@ class Stochastic_simulation():
 		ax.set_ylabel(r'Number of linages', fontsize = 20)
 		ax.tick_params(labelsize = 20)
 		ax.legend(loc = 0, fontsize = 20)
+
+	def plot_k_largest_linages(self, k, ax):
+
+		#Calculate array of the frequencies of the largest k linages
+		Seq_states = [i.active for i in self.Sequences]
+		Seq_sizes = self.linages_time_series[:,-1]
+		k = k
+		biggest_k_linages_sizes = np.sort(Seq_sizes)[-k:]
+		Pos = np.array([i for i, j in enumerate(Seq_sizes) if np.isin(j,biggest_k_linages_sizes)])
+		biggest_k_linages = self.linages_time_series[Pos,:]
+		#for i in range(1,int(len(self.linages_time_series[0,:]))):
+		#    biggest_k_linages = np.vstack((biggest_k_linages, self.linages_time_series[Pos,i]))
+		#biggest_k_linages_freq = np.transpose(biggest_k_linages)/np.sum(np.transpose(biggest_k_linages), axis = 0)
+		biggest_k_linages_freq = biggest_k_linages/np.sum(biggest_k_linages, axis = 0)
+
+		ax.stackplot(self.time_series, biggest_k_linages_freq, alpha = 0.9);
+		#ax[0].set_yscale('log')
+		ax.set_xlabel(r'Time $t$', fontsize = 20)
+		ax.set_ylabel(r'k largest linages', fontsize = 20)
+		ax.tick_params(labelsize = 20)
+
+		return biggest_k_linages_freq
+
+	def plot_entropy_k_largest_linages(self, k, biggest_k_linages_freq, ax):
+
+		#Calculate array of the frequencies of the largest k linages
+		#Seq_states = [i.active for i in self.Sequences]
+		#Seq_sizes = self.linages_time_series[:,-1]
+		#k = k
+		#biggest_k_linages_sizes = np.sort(Seq_sizes)[-k:]
+		#Pos = np.array([i for i, j in enumerate(Seq_sizes) if np.isin(j,biggest_k_linages_sizes)])
+		#biggest_k_linages = self.linages_time_series[Pos,:]
+		#for i in range(1,int(len(self.linages_time_series[0,:]))):
+		#    biggest_k_linages = np.vstack((biggest_k_linages, self.linages_time_series[Pos,i]))
+		#biggest_k_linages_freq = np.transpose(biggest_k_linages)/np.sum(np.transpose(biggest_k_linages), axis = 0)
+		#biggest_k_linages_freq = biggest_k_linages/np.sum(biggest_k_linages, axis = 0)
+
+		#Calculate entropy
+		entropy = [np.sum(-1*biggest_k_linages_freq[:,t]*np.log(biggest_k_linages_freq[:,t])) for t in range(int(len(self.time_series)))]
+		ax.plot(self.time_series, entropy, linewidth = '4', color = 'indigo')
+		#ax[1].set_yscale('log')
+		ax.set_xlabel(r'Time $t$', fontsize = 20)
+		ax.set_ylabel(r'Entropy', fontsize = 20)
+		ax.tick_params(labelsize = 20)
 		
 def print_raw_file(Sequences, filename):
 
@@ -267,9 +343,9 @@ def calculate_energy(Energy_Matrix, seq1, seq2):
 	Energy = 0
 	for i in range(9):
 		pos_i = np.where(np.isin(Alphabet,list_seq1[i]))[0][0]
-		for j in range(9):
-			pos_j = np.where(np.isin(Alphabet,list_seq2[j]))[0][0]
-			Energy += M[pos_i][pos_j]
+		pos_j = np.where(np.isin(Alphabet,list_seq2[i]))[0][0]
+		Energy += M[pos_i][pos_j]
+	return Energy
 
 def generate_Sequences(n_seq):
 
@@ -295,12 +371,17 @@ def generate_Sequences(n_seq):
 	[0.00,-0.34,0.20,0.25,0.42,0.09,-0.28,-0.33,0.10,-0.11,-0.07,0.01,-0.42,-0.18,-0.10,0.04,-0.21,-0.38,0.11,0.26]]
 
 	Alphabet = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't']
-	master_sequence = "".join(np.random.choice(Alphabet, 9))
+	antigen_sequence = "".join(np.random.choice(Alphabet, 9))
+	print('Antigen Seq: ' + antigen_sequence + '\n')
 
-	complementary_sequence = find_complementary_seq(sequence = master_sequence , Energy_Matrix =  M)
-	master_sequence_energy = calculate_energy(Energy_Matrix = M, seq1 = master_sequence, seq2 = complementary_sequence)
+	master_sequence = find_complementary_seq(sequence = antigen_sequence , Energy_Matrix =  M)
+	print('Master Seq: ' + master_sequence + '\n')
 
-	Master_Sequence = Sequence(seq_id = 0, parent = master_sequence, energy_parent = master_sequence_energy, Master_Seq=True, master_sequence = master_sequence, complementary_sequence = complementary_sequence, Energy_Matrix = M)
+	master_sequence_energy = calculate_energy(Energy_Matrix = M, seq1 = master_sequence, seq2 = antigen_sequence)
+
+	print('Master Seq energy: ', master_sequence_energy, '\n')
+
+	Master_Sequence = Sequence(seq_id = 0, parent = master_sequence, energy_parent = master_sequence_energy, Master_Seq=True, master_sequence = master_sequence, complementary_sequence = antigen_sequence, Energy_Matrix = M)
 	Sequences = np.array([Master_Sequence])
 	sequences = np.array([master_sequence])
 	zero_date = datetime(2000, 1, 1)
@@ -319,7 +400,7 @@ def generate_Sequences(n_seq):
 	    succ = False 
 	    while(succ == False):
 	        parent = np.random.choice(Sequences)
-	        new_seq = Sequence(seq_id = i, parent = parent.sequence, energy_parent = parent.energy,  parent_id = parent.id, master_sequence = master_sequence, complementary_sequence = complementary_sequence, Energy_Matrix = M)
+	        new_seq = Sequence(seq_id = i, parent = parent.sequence, energy_parent = parent.energy,  parent_id = parent.id, master_sequence = master_sequence, complementary_sequence = antigen_sequence, Energy_Matrix = M)
 	        #check if the new sequence is already in the tree. Here we can check for other condicions like that the energy is higher than the parent.
 	        if not(np.isin(new_seq.sequence, sequences)):
 	            parent.tree_position = 0    
