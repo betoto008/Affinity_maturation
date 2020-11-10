@@ -6,6 +6,7 @@ from matplotlib.lines import Line2D
 from datetime import datetime, timedelta
 import scipy.special as sc
 import seaborn as sns
+import pickle
 
 class Sequence():
 	"""docstring for Sequence"""
@@ -149,7 +150,7 @@ class Stochastic_simulation():
 
 	def Gillespie(self):
 
-		for i in range(self.T):
+		while(self.time_series[-1] < self.T):
 			self.gillespie_step()
 
 	def plot_energy_matrix(self, ax):
@@ -423,5 +424,55 @@ def generate_Sequences(n_seq):
 	file_2.close()
 
 	return Sequences
+
+def plot_histogram_hamming_distance(Sequences, ax):
+
+	distances = np.array([i.hamming_distance for i in Sequences])
+	data_distances = np.histogram(distances, bins=range(int(max(distances))))
+
+	#ax.plot(data_distances[1][0:-1], scipy.special.comb(9, data_distances[1][0:-1]), linewidth = 4 , label = 'Binary')
+	ax.plot(data_distances[1][0:-1], sc.comb(9, data_distances[1][0:-1])*((20-1)**data_distances[1][0:-1]), color = 'steelblue', linewidth = 4 , label = '20-Alphabet')
+	#ax.plot(data_distances[1][0:-1], scipy.special.comb(9, data_distances[1][0:-1])*((4-1)**data_distances[1][0:-1]), linewidth = 4 , label = '4-Alphabet')
+
+	#ax.plot(data_distances[1][0:-1], np.exp(4*data_distances[1][0:-1]), linewidth = 4, label = r'$e^{\lambda r}$')
+	ax.plot(data_distances[1][0:-1], data_distances[0], linewidth = 4, label = 'Data', linestyle = 'dashed')
+
+	ax.set_yscale('log')
+	#ax.set_ylim(1,1e8)
+	ax.set_xlabel(r'Hamming Distance $r$', fontsize = 20)
+	ax.set_ylabel(r'', fontsize = 20)
+	ax.tick_params(labelsize = 20)
+	handles, labels = ax.get_legend_handles_labels()
+	ax.legend(np.concatenate(([],handles)),np.concatenate(([],labels)), loc = 2, fontsize = 20)
+
+	return distances
+
+def plot_histogram_energy(Sequences, ax):
+
+	energies = np.array([i.energy for i in Sequences])
+	data_energies = np.histogram(energies, bins=50)
+
+	ax.plot(data_energies[1][0:-1], data_energies[0], linewidth = 4, color = 'indianred', label = 'Data', linestyle = 'dashed')
+	ax.set_yscale('log')
+	#ax.set_ylim(1,1e10)
+	ax.set_xlabel(r'Energy $r$', fontsize = 20)
+	ax.set_ylabel(r'', fontsize = 20)
+	ax.tick_params(labelsize = 20)
+	handles, labels = ax.get_legend_handles_labels()
+	ax.legend(np.concatenate(([],handles)),np.concatenate(([],labels)), loc = 2, fontsize = 20)
+
+	return energies
+
+def plot_scatter_hamming_distance_energy(distances, energies, ax):
+
+	ax.scatter(distances, energies, color = 'indigo', s = 25, marker = '^')
+	ax.hlines(energies[0],0,9, linestyle = 'dashed', label = r'Master Seq. energy $\epsilon_0$')
+	#ax.set_yscale('log')
+	#ax.set_ylim(1,1e10)
+	ax.set_xlabel(r'Hamming distance $d$', fontsize = 20)
+	ax.set_ylabel(r'Energy $\epsilon$', fontsize = 20)
+	ax.tick_params(labelsize = 20)
+	ax.legend(loc = 0, fontsize = 20)
+
 
 
