@@ -79,6 +79,8 @@ class Stochastic_simulation():
 		self.master_Sequence_energy = master_Sequence_energy
 
 		self.linages_time_series = np.ones(shape =(n_linages, 1))
+		self.activation_time_series = np.zeros(shape=(n_linages, 1))
+		self.active_linages = 0
 		self.antigen_time_series = np.array([1])
 		self.time_series = np.array([0])
 		self.probabilities = np.zeros((2*n_linages)+1)
@@ -93,7 +95,7 @@ class Stochastic_simulation():
 			#Activation
 			self.probabilities[(2*i)-1] = (self.antigen_time_series[-1]/(self.antigen_time_series[-1]+np.exp(self.master_Sequence_energy + self.Sequences[i-1].energy)))*(1-self.Sequences[i-1].active)
 			#Proliferation
-			self.probabilities[(2*i)] = self.nu*(self.linages_time_series[i-1,-1] - 1)
+			self.probabilities[(2*i)] = self.nu*(self.linages_time_series[i-1,-1])*(self.Sequences[i-1].active)
 
 	def gillespie_step(self):
 
@@ -133,24 +135,29 @@ class Stochastic_simulation():
 		if(transition_Agent == 0):
 			self.antigen_time_series = np.append(self.antigen_time_series, self.antigen_time_series[-1]+1)
 			self.linages_time_series = np.hstack((self.linages_time_series, self.linages_time_series[:,-1].reshape(self.n_linages, 1)))
+			self.activation_time_series = np.hstack((self.activation_time_series, self.activation_time_series[:,-1].reshape(self.n_linages, 1)))
 		else:
 			#Activation event
 			if(transition_Type==1):
 				self.Sequences[transition_Agent-1].active = True
 				self.antigen_time_series = np.append(self.antigen_time_series, self.antigen_time_series[-1])
-				temp_array = self.linages_time_series[:,-1].reshape(self.n_linages, 1)
-				temp_array[transition_Agent-1] = temp_array[transition_Agent-1] + 1
+				temp_array = self.activation_time_series[:,-1].reshape(self.n_linages, 1)
+				temp_array[transition_Agent-1] =  1
 				self.linages_time_series = np.hstack((self.linages_time_series, self.linages_time_series[:,-1].reshape(self.n_linages, 1)))
-			#B cell proliferation event
+				self.activation_time_series = np.hstack((self.activation_time_series, temp_array))
+				self.active_linages +=1
+			#B cell prolifration event
 			else:
 				self.antigen_time_series = np.append(self.antigen_time_series, self.antigen_time_series[-1])
 				temp_array = self.linages_time_series[:,-1].reshape(self.n_linages, 1)
 				temp_array[transition_Agent-1] = temp_array[transition_Agent-1] + 1
 				self.linages_time_series = np.hstack((self.linages_time_series, temp_array))
+				self.activation_time_series = np.hstack((self.activation_time_series, self.activation_time_series[:,-1].reshape(self.n_linages, 1)))
 
 	def Gillespie(self):
 
-		while(self.time_series[-1] < self.T):
+		#while((self.time_series[-1] < self.T) and (self.antigen_time_series[-1]<8e2)):
+		while((self.antigen_time_series[-1]<1e3) and (self.active_linages < 15)):
 			self.gillespie_step()
 
 	def plot_energy_matrix(self, ax):
@@ -197,21 +204,26 @@ class Stochastic_simulation():
 		rho_array = np.logspace(0, np.log10(max(self.antigen_time_series)), 5)
 		colors = plt.cm.Reds(np.linspace(0,1,len(rho_array)))
 		for i, rho in enumerate(rho_array): 
-			ax.plot(np.linspace(-2,8,10), (1/(1+np.exp(self.master_Sequence_energy + np.linspace(-2,8,10) - np.log(rho)))), linewidth  = 4, color = colors[i], label = r'$\rho = %.0e$'%(rho))
+			ax.plot(np.linspace(-6,8,10), (1/(1+np.exp(self.master_Sequence_energy + np.linspace(-6,8,10) - np.log(rho)))), linewidth  = 4, color = colors[i], label = r'$\rho = %.0e$'%(rho))
 		ax.set_yscale('log')
 		ax.set_xlabel(r'Energy $\epsilon$', fontsize = 20)
 		ax.set_ylabel(r'Probability of binding $p_b$', fontsize = 20)
 		ax.tick_params(labelsize = 20)
 		ax.legend(loc = 0, fontsize = 20)
 
-	def stackplot_linages_time(self, ax):
+	def stackplot_linages_time(self, ax, antigen = False, time = True):
 		colors = []
 		for i in self.Sequences:
 			if(i.active==True):
 				colors.append('tab:red')
 			else:
 				colors.append('indigo')
-		ax.stackplot(self.time_series, self.linages_time_series/np.sum(self.linages_time_series, axis = 0), colors=colors, alpha = 0.9);
+		if(time):
+			ax.stackplot(self.time_series, self.linages_time_series/np.sum(self.linages_time_series, axis = 0), colors=colors, alpha = 0.9);
+			ax.set_xlabel(r'Time $t$', fontsize = 20)
+		if(antigen):
+			ax.stackplot(self.antigen_time_series, self.linages_time_series/np.sum(self.linages_time_series, axis = 0), colors=colors, alpha = 0.9);
+			ax.set_xlabel(r'Antigen $\rho$', fontsize = 20)
 		#ax.set_xscale('log')
 		#ax.set_yscale('log')
 		ax.set_xlabel(r'Time $t$', fontsize = 20)
