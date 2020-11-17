@@ -16,4 +16,4 @@ M2 = np.loadtxt('../Text_files/MJ2.txt', skiprows= 1, usecols=range(1,21)).tolis
 
 n_seq = input('How many sequences do you want to create? ')
 Sequences = generate_Sequences(int(n_seq), Energy_Matrix = M2)
-pickle.dump( Sequences, open( "../Text_files/Sequences-n_seq-%d.pkl"%(int(n_seq)), "wb" ) )
+pickle.dump( Sequences, open( "../Text_files/Sequences_MJ2-n_seq-%d.pkl"%(int(n_seq)), "wb" ) )
