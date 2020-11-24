@@ -141,7 +141,7 @@ class Stochastic_simulation():
 			if(transition_Type==1):
 				self.Sequences[transition_Agent-1].active = True
 				self.antigen_time_series = np.append(self.antigen_time_series, self.antigen_time_series[-1])
-				temp_array = self.activation_time_series[:,-1].reshape(self.n_linages, 1)
+				temp_array = np.copy(self.activation_time_series[:,-1]).reshape(self.n_linages, 1)
 				temp_array[transition_Agent-1] =  1
 				self.linages_time_series = np.hstack((self.linages_time_series, self.linages_time_series[:,-1].reshape(self.n_linages, 1)))
 				self.activation_time_series = np.hstack((self.activation_time_series, temp_array))
@@ -149,7 +149,7 @@ class Stochastic_simulation():
 			#B cell prolifration event
 			else:
 				self.antigen_time_series = np.append(self.antigen_time_series, self.antigen_time_series[-1])
-				temp_array = self.linages_time_series[:,-1].reshape(self.n_linages, 1)
+				temp_array = np.copy(self.linages_time_series[:,-1]).reshape(self.n_linages, 1)
 				temp_array[transition_Agent-1] = temp_array[transition_Agent-1] + 1
 				self.linages_time_series = np.hstack((self.linages_time_series, temp_array))
 				self.activation_time_series = np.hstack((self.activation_time_series, self.activation_time_series[:,-1].reshape(self.n_linages, 1)))
@@ -278,7 +278,7 @@ class Stochastic_simulation():
 class Stochastic_simulation_deterministic_antigen():
 	"""docstring for Stochastic_simulation"""
 	def __init__(self, Sequences, n_linages, T, U, gamma, nu, R, beta, master_Sequence_energy):
-		super(Stochastic_simulation, self).__init__()
+		super(Stochastic_simulation_deterministic_antigen, self).__init__()
 		self.n_linages = n_linages
 		self.Sequences = Sequences
 		self.T = T
@@ -292,21 +292,20 @@ class Stochastic_simulation_deterministic_antigen():
 		self.linages_time_series = np.ones(shape =(n_linages, 1))
 		self.activation_time_series = np.zeros(shape=(n_linages, 1))
 		self.active_linages = 0
-		self.antigen_time_series = np.array([20])
 		self.time_series = np.array([0])
-		self.probabilities = np.zeros((2*n_linages)+1)
+		self.probabilities = np.zeros((2*n_linages))
 
 	def calculate_probabilities(self):
 
 		# Initialize with the event of antigen growth.
-		self.probabilities[0] = self.beta*self.antigen_time_series[-1]
+		#self.probabilities[0] = self.beta*self.antigen_time_series[-1]
 
 		# fill with Bcell activation and proliferation
-		for i in range(1, self.n_linages+1):
+		for i in range(0, self.n_linages):
 			#Activation
-			self.probabilities[(2*i)-1] = (self.antigen_time_series[-1]/(self.antigen_time_series[-1]+np.exp(self.master_Sequence_energy + self.Sequences[i-1].energy)))*(1-self.Sequences[i-1].active)
+			self.probabilities[(2*i)] = (20*np.exp(self.time_series[-1])/(20*np.exp(self.time_series[-1])+np.exp(self.master_Sequence_energy + self.Sequences[i].energy)))*(1-self.Sequences[i].active)
 			#Proliferation
-			self.probabilities[(2*i)] = self.nu*(self.linages_time_series[i-1,-1])*(self.Sequences[i-1].active)
+			self.probabilities[(2*i)+1] = self.nu*(self.linages_time_series[i,-1])*(self.Sequences[i].active)
 
 	def gillespie_step(self):
 
@@ -321,6 +320,7 @@ class Stochastic_simulation_deterministic_antigen():
 		#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 		self.calculate_probabilities()
+		print(self.probabilities)
 
 		#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 		# 3. Calculate alpha
@@ -340,30 +340,21 @@ class Stochastic_simulation_deterministic_antigen():
 		#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 		transitionIdx   = np.searchsorted(probabilities_cumsum,r2*alpha)
 		transition_Type  = transitionIdx % 2
-		transition_Agent  = int((transitionIdx+1)/2)
-
-		#antigen profileration event
-		if(transition_Agent == 0):
-			self.antigen_time_series = np.append(self.antigen_time_series, self.antigen_time_series[-1]+1)
+		transition_Agent  = int((transitionIdx)/2)
+		#Activation event
+		if(transition_Type==0):
+			self.Sequences[transition_Agent].active = True
+			temp_array = np.copy(self.activation_time_series[:,-1]).reshape(self.n_linages, 1)
+			temp_array[transition_Agent] =  1
 			self.linages_time_series = np.hstack((self.linages_time_series, self.linages_time_series[:,-1].reshape(self.n_linages, 1)))
-			self.activation_time_series = np.hstack((self.activation_time_series, self.activation_time_series[:,-1].reshape(self.n_linages, 1)))
+			self.activation_time_series = np.hstack((self.activation_time_series, temp_array))
+			self.active_linages +=1
+		#B cell prolifration event
 		else:
-			#Activation event
-			if(transition_Type==1):
-				self.Sequences[transition_Agent-1].active = True
-				self.antigen_time_series = np.append(self.antigen_time_series, self.antigen_time_series[-1])
-				temp_array = self.activation_time_series[:,-1].reshape(self.n_linages, 1)
-				temp_array[transition_Agent-1] =  1
-				self.linages_time_series = np.hstack((self.linages_time_series, self.linages_time_series[:,-1].reshape(self.n_linages, 1)))
-				self.activation_time_series = np.hstack((self.activation_time_series, temp_array))
-				self.active_linages +=1
-			#B cell prolifration event
-			else:
-				self.antigen_time_series = np.append(self.antigen_time_series, self.antigen_time_series[-1])
-				temp_array = self.linages_time_series[:,-1].reshape(self.n_linages, 1)
-				temp_array[transition_Agent-1] = temp_array[transition_Agent-1] + 1
-				self.linages_time_series = np.hstack((self.linages_time_series, temp_array))
-				self.activation_time_series = np.hstack((self.activation_time_series, self.activation_time_series[:,-1].reshape(self.n_linages, 1)))
+			temp_array = np.copy(self.linages_time_series[:,-1]).reshape(self.n_linages, 1)
+			temp_array[transition_Agent] = temp_array[transition_Agent] + 1
+			self.linages_time_series = np.hstack((self.linages_time_series, temp_array))
+			self.activation_time_series = np.hstack((self.activation_time_series, self.activation_time_series[:,-1].reshape(self.n_linages, 1)))
 
 	def Gillespie(self):
 
@@ -373,7 +364,7 @@ class Stochastic_simulation_deterministic_antigen():
 
 	def plot_antigen_time(self, ax):
 
-		ax.plot(self.time_series, self.antigen_time_series, linewidth  = 4)
+		ax.plot(self.time_series, np.exp(self.time_series), linewidth  = 4)
 		ax.set_yscale('log')
 		ax.set_xlabel(r'Time $t$', fontsize = 20)
 		ax.set_ylabel(r'Antigen $\rho$', fontsize = 20)
@@ -382,7 +373,7 @@ class Stochastic_simulation_deterministic_antigen():
 		#ax.legend(np.concatenate(([Line2D([0], [0], color='tab:red', linewidth=4, linestyle='solid', ms = 8)],handles)),np.concatenate(([r'$n_b(r, \rho)$'],labels)), loc = 0, fontsize = 20)
 
 	def plot_prob_binding(self, ax):
-		rho_array = np.logspace(0, np.log10(max(self.antigen_time_series)), 5)
+		rho_array = np.logspace(0, self.time_series[-1], 5)
 		colors = plt.cm.Reds(np.linspace(0,1,len(rho_array)))
 		for i, rho in enumerate(rho_array): 
 			ax.plot(np.linspace(-6,8,10), (1/(1+np.exp(self.master_Sequence_energy + np.linspace(-6,8,10) - np.log(rho)))), linewidth  = 4, color = colors[i], label = r'$\rho = %.0e$'%(rho))
@@ -414,7 +405,7 @@ class Stochastic_simulation_deterministic_antigen():
 
 	def hist_sequences_hamming_distance(self, Sequences, ax):
 
-		rho_array = np.logspace(0, np.log10(max(self.antigen_time_series)), 5)
+		rho_array = np.logspace(0, self.time_series[-1], 5)
 		colors = plt.cm.Reds(np.linspace(0,1,len(rho_array)))
 		data_distances = ax.hist([Sequences[i].hamming_distance for i in range(int(len(Sequences)))], bins = range(10), align = 'left', label = r'$S(d)$', color = 'lightsteelblue', alpha = 0.5)
 		ax.plot(data_distances[1][0:-1], sc.comb(9, data_distances[1][0:-1])*((20-1)**data_distances[1][0:-1]), linewidth = 4 , color = 'lightsteelblue', alpha = 0.6)
@@ -435,7 +426,7 @@ class Stochastic_simulation_deterministic_antigen():
 
 	def hist_sequences_energy(self, Sequences, bins, ax):
 
-		rho_array = np.logspace(0, np.log10(max(self.antigen_time_series)), 5)
+		rho_array = np.logspace(0, self.time_series[-1], 5)
 		colors = plt.cm.Reds(np.linspace(0,1,len(rho_array)))
 		data_energies = ax.hist([Sequences[i].energy for i in range(int(len(Sequences)))], bins = bins, align = 'left', label = r'$S(\epsilon)$', color = 'lightsteelblue', alpha = 0.5)
 		#ax.plot(data_energies[1][0:-1], sc.comb(9, data_energies[1][0:-1])*((20-1)**data_energies[1][0:-1]), linewidth = 4 , color = 'lightsteelblue', alpha = 0.6)
