@@ -320,7 +320,6 @@ class Stochastic_simulation_deterministic_antigen():
 		#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 		self.calculate_probabilities()
-		print(self.probabilities)
 
 		#~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 		# 3. Calculate alpha
@@ -642,5 +641,37 @@ def plot_scatter_hamming_distance_energy(distances, energies, ax):
 	ax.tick_params(labelsize = 20)
 	ax.legend(loc = 0, fontsize = 20)
 
+def run_ensemble_linage_size_distribution(Sequences, n_linages, n_seq, nu, beta, T, master_Sequence_energy, n_sim, new = False):
+	n_linages = n_linages
+	n_seq = n_seq
+	U = n_linages/n_seq
+	nu = nu
+	R=6
+	beta = beta
+	gamma = 1
+	T = T
+	master_Sequence_energy = master_Sequence_energy
 
+	#_____ Choose one of the following____________________________________
+	if(new):
+		activated_linages_size_t = []
+		final_antigen_concentration = []
+	else:
+		activated_linages_size_t = pickle.load( open( "../Text_files/activated_linages_size_t.pkl", "rb" ) )
+		final_antigen_concentration = pickle.load( open( "../Text_files/final_antigen_concentration.pkl", "rb" ) )
+	#_____________________________________________________________________
+
+	for i in range(n_sim):
+		if(i%int((n_sim/5))==0):
+			print(i, '...')
+		Sub_Sequences = np.random.choice(Sequences, n_linages)
+		Model = Stochastic_simulation(Sequences = Sub_Sequences, n_linages=n_linages, T = T, U = U, gamma = gamma, nu = nu, R = R, beta = beta, master_Sequence_energy = master_Sequence_energy)
+		Model.Gillespie()
+		activated_linages_size_t = np.append(activated_linages_size_t, [Model.linages_time_series[i,-1] for i in range(n_linages) if Model.Sequences[i].active])
+		final_antigen_concentration = np.append(final_antigen_concentration, Model.antigen_time_series[-1])
+
+	pickle.dump(activated_linages_size_t, open( "../Text_files/activated_linages_size_t.pkl", "wb" ) )
+	pickle.dump(final_antigen_concentration, open( "../Text_files/final_antigen_concentration.pkl", "wb" ) )
+
+	print('Ensemble size:', len(activated_linages_size_t))
 
