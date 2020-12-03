@@ -102,16 +102,18 @@ class Deterministic_simulation():
 		ax.plot(self.time_series, self.antigen_time_series/self.N_A, linewidth  = 4)
 		ax.set_yscale('log')
 		ax.set_xlabel(r'Time $t$', fontsize = 20)
-		ax.set_ylabel(r'Antigen $\rho$', fontsize = 20)
+		ax.set_ylabel(r'Antigen $\rho$ [M]', fontsize = 20)
 		ax.tick_params(labelsize = 20)
 		#handles, labels = ax.get_legend_handles_labels()
 		#ax.legend(np.concatenate(([Line2D([0], [0], color='tab:red', linewidth=4, linestyle='solid', ms = 8)],handles)),np.concatenate(([r'$n_b(r, \rho)$'],labels)), loc = 0, fontsize = 20)
 
 	def plot_prob_binding(self, ax):
-		rho_array = np.logspace(0, np.log10(max(self.antigen_time_series)/self.N_A), 5)
+		rho_array = np.logspace(int(np.log10(max(self.antigen_time_series)/self.N_A)/2), np.log10(max(self.antigen_time_series)/self.N_A), 5)
 		colors = plt.cm.Reds(np.linspace(0,1,len(rho_array)))
+		energies  = np.array([self.Sequences[i].energy for i in range(int(len(self.Sequences)))])
+		energies_array = np.linspace(np.min(energies),np.max(energies),100)
 		for i, rho in enumerate(rho_array): 
-			ax.plot(np.linspace(-6,8,10), (1/(1+np.exp(self.master_Sequence_energy + np.linspace(-6,8,10) - np.log(rho)))), linewidth  = 4, color = colors[i], label = r'$\rho = %.0e$'%(rho))
+			ax.plot(energies_array, (1/(1+np.exp(self.master_Sequence_energy + energies_array - np.log(rho)))), linewidth  = 4, color = colors[i], label = r'$\rho \approx 10^{%.0d}$'%(np.log10(rho)))
 		ax.set_yscale('log')
 		ax.set_xlabel(r'Energy $\epsilon$', fontsize = 20)
 		ax.set_ylabel(r'Probability of binding $p_b$', fontsize = 20)
@@ -130,7 +132,8 @@ class Deterministic_simulation():
 			ax.set_xlabel(r'Time $t$', fontsize = 20)
 		if(antigen):
 			ax.stackplot(self.antigen_time_series, self.linages_time_series/np.sum(self.linages_time_series, axis = 0), colors=colors, alpha = 0.9);
-			ax.set_xlabel(r'Antigen $\rho$', fontsize = 20)
+			ax.set_xlabel(r'Antigen $\rho$ [M]', fontsize = 20)
+			ax.set_xscale('log')
 		#ax.set_xscale('log')
 		#ax.set_yscale('log')
 		ax.set_xlabel(r'Time $t$', fontsize = 20)
@@ -140,17 +143,17 @@ class Deterministic_simulation():
 
 	def hist_sequences_hamming_distance(self, Sequences, ax):
 
-		rho_array = np.logspace(0, np.log10(max(self.antigen_time_series)/self.N_A), 5)
+		rho_array = np.logspace(np.log10(1/self.N_A), np.log10(max(self.antigen_time_series)/self.N_A), 5)
 		colors = plt.cm.Reds(np.linspace(0,1,len(rho_array)))
 		data_distances = ax.hist([Sequences[i].hamming_distance for i in range(int(len(Sequences)))], bins = range(10), align = 'left', label = r'$S(d)$', color = 'lightsteelblue', alpha = 0.5)
-		ax.plot(data_distances[1][0:-1], sc.comb(9, data_distances[1][0:-1])*((20-1)**data_distances[1][0:-1]), linewidth = 4 , color = 'lightsteelblue', alpha = 0.6)
+		#ax.plot(data_distances[1][0:-1], sc.comb(9, data_distances[1][0:-1])*((20-1)**data_distances[1][0:-1]), linewidth = 4 , color = 'lightsteelblue', alpha = 0.6)
 
 		ax.hist([self.Sequences[i].hamming_distance for i in range(int(len(self.Sequences)))], bins = range(10), align = 'left', label = r'$US(d)$', color = 'indigo', alpha = 0.6)
-		ax.plot(data_distances[1][0:-1], self.U*sc.comb(9, data_distances[1][0:-1])*((20-1)**data_distances[1][0:-1]), linewidth = 4 , color = 'indigo', alpha = 0.6)
+		#ax.plot(data_distances[1][0:-1], self.U*sc.comb(9, data_distances[1][0:-1])*((20-1)**data_distances[1][0:-1]), linewidth = 4 , color = 'indigo', alpha = 0.6)
 
-		ax.hist([self.Sequences[i].hamming_distance for i in range(int(len(self.Sequences))) if self.Sequences[i].active], bins = range(10), align = 'left', label = r'Activated Linages', color = 'tab:red', alpha = 0.8)
-		for i, rho in enumerate(rho_array):
-			ax.plot(data_distances[1][0:-1], self.U*sc.comb(9, data_distances[1][0:-1].astype(int))*((20-1)**data_distances[1][0:-1])*(1/(1+np.exp(self.master_Sequence_energy + data_distances[1][0:-1] - np.log(rho)))) , color = colors[i], linestyle = 'dashed', linewidth = 3)
+		ax.hist([self.Sequences[i].hamming_distance for i in range(int(len(self.Sequences))) if self.Sequences[i].active], bins = range(10), align = 'left', label = r'Activated Linages', color = 'indianred', alpha = 0.8)
+		#for i, rho in enumerate(rho_array):
+		#	ax.plot(data_distances[1][0:-1], self.U*sc.comb(9, data_distances[1][0:-1].astype(int))*((20-1)**data_distances[1][0:-1])*(1/(1+np.exp(self.master_Sequence_energy + data_distances[1][0:-1] - np.log(rho)))) , color = colors[i], linestyle = 'dashed', linewidth = 3)
 
 		ax.set_ylim(0.1, 2e5)    
 		ax.set_yscale('log')
@@ -161,7 +164,7 @@ class Deterministic_simulation():
 
 	def hist_sequences_energy(self, Sequences, bins, ax):
 
-		rho_array = np.logspace(0, np.log10(max(self.antigen_time_series)/self.N_A), 5)
+		rho_array = np.logspace(np.log10(1/self.N_A), np.log10(max(self.antigen_time_series)/self.N_A), 5)
 		colors = plt.cm.Reds(np.linspace(0,1,len(rho_array)))
 		data_energies = ax.hist([Sequences[i].energy for i in range(int(len(Sequences)))], bins = bins, align = 'left', label = r'$S(\epsilon)$', color = 'lightsteelblue', alpha = 0.5)
 		#ax.plot(data_energies[1][0:-1], sc.comb(9, data_energies[1][0:-1])*((20-1)**data_energies[1][0:-1]), linewidth = 4 , color = 'lightsteelblue', alpha = 0.6)
@@ -169,13 +172,34 @@ class Deterministic_simulation():
 		ax.hist([self.Sequences[i].energy for i in range(int(len(self.Sequences)))], bins = bins, align = 'left', label = r'$US(\epsilon)$', color = 'indigo', alpha = 0.6)
 		#ax.plot(data_energies[1][0:-1], self.U*sc.comb(9, data_energies[1][0:-1])*((20-1)**data_energies[1][0:-1]), linewidth = 4 , color = 'indigo', alpha = 0.6)
 
-		ax.hist([self.Sequences[i].energy for i in range(int(len(self.Sequences))) if self.Sequences[i].active], bins = bins, align = 'left', label = r'Activated Linages', color = 'tab:red', alpha = 0.8)
+		ax.hist([self.Sequences[i].energy for i in range(int(len(self.Sequences))) if self.Sequences[i].active], bins = bins, align = 'left', label = r'Activated Linages', color = 'indianred', alpha = 0.8)
 		#for i, rho in enumerate(rho_array):
 		#	ax.plot(data_energies[1][0:-1], self.U*sc.comb(9, data_energies[1][0:-1].astype(int))*((20-1)**data_energies[1][0:-1])*(1/(1+np.exp(self.master_Sequence_energy + data_energies[1][0:-1] - np.log(rho)))) , color = colors[i], linestyle = 'dashed', linewidth = 3)
 
 		#ax.set_ylim(0.1, 2e5)    
 		ax.set_yscale('log')
 		ax.set_xlabel(r'Energy $\epsilon$', fontsize = 20)
+		ax.set_ylabel(r'Number of linages', fontsize = 20)
+		ax.tick_params(labelsize = 20)
+		ax.legend(loc = 0, fontsize = 20)
+
+	def hist_sequences_k_D(self, Sequences, bins, ax):
+
+		rho_array = np.logspace(np.log10(1/self.N_A), np.log10(max(self.antigen_time_series)/self.N_A), 5)
+		colors = plt.cm.Reds(np.linspace(0,1,len(rho_array)))
+		data_energies = ax.hist([np.exp(Sequences[i].energy) for i in range(int(len(Sequences)))], bins = bins, align = 'mid', label = r'$S(\epsilon)$', color = 'lightsteelblue', alpha = 0.5)
+		#ax.plot(data_energies[1][0:-1], sc.comb(9, data_energies[1][0:-1])*((20-1)**data_energies[1][0:-1]), linewidth = 4 , color = 'lightsteelblue', alpha = 0.6)
+
+		ax.hist([np.exp(self.Sequences[i].energy) for i in range(int(len(self.Sequences)))], bins = bins, align = 'mid', label = r'$US(\epsilon)$', color = 'indigo', alpha = 0.6)
+		#ax.plot(data_energies[1][0:-1], self.U*sc.comb(9, data_energies[1][0:-1])*((20-1)**data_energies[1][0:-1]), linewidth = 4 , color = 'indigo', alpha = 0.6)
+
+		ax.hist([np.exp(self.Sequences[i].energy) for i in range(int(len(self.Sequences))) if self.Sequences[i].active], bins = bins, align = 'mid', label = r'Activated Linages', color = 'indianred', alpha = 0.8)
+		#for i, rho in enumerate(rho_array):
+		#	ax.plot(data_energies[1][0:-1], self.U*sc.comb(9, data_energies[1][0:-1].astype(int))*((20-1)**data_energies[1][0:-1])*(1/(1+np.exp(self.master_Sequence_energy + data_energies[1][0:-1] - np.log(rho)))) , color = colors[i], linestyle = 'dashed', linewidth = 3)
+
+		#ax.set_ylim(0.1, 2e5)    
+		ax.set_yscale('log')
+		ax.set_xlabel(r'$k_D$', fontsize = 20)
 		ax.set_ylabel(r'Number of linages', fontsize = 20)
 		ax.tick_params(labelsize = 20)
 		ax.legend(loc = 0, fontsize = 20)
@@ -206,7 +230,7 @@ class Deterministic_simulation():
 
 		#Calculate entropy
 		entropy = [np.sum(-1*biggest_k_linages_freq[:,t]*np.log(biggest_k_linages_freq[:,t])) for t in range(int(len(self.time_series)))]
-		ax.plot(self.time_series, entropy, linewidth = '4', color = 'indigo')
+		ax.plot(self.time_series[::50], entropy[::50], marker = 'o', ms = 8, linestyle = '', linewidth = '4', color = 'olive', label = 'Simulation')
 		#ax[1].set_yscale('log')
 		ax.set_xlabel(r'Time $t$', fontsize = 20)
 		ax.set_ylabel(r'Entropy', fontsize = 20)
@@ -568,7 +592,7 @@ def plot_histogram_energy(Sequences, bins, ax):
 	energies = np.array([i.energy for i in Sequences])
 	data_energies = np.histogram(energies, bins=bins)
 
-	ax.plot(data_energies[1][0:-1], data_energies[0], linewidth = 4, color = 'indianred', label = 'Data', linestyle = '', marker = 'o')
+	ax.plot(data_energies[1][0:-1], data_energies[0], linewidth = 4, color = 'steelblue', label = 'Data', linestyle = '', marker = 'o')
 	ax.set_yscale('log')
 	#ax.set_ylim(1,1e10)
 	ax.set_xlabel(r'Energy $r$', fontsize = 20)
@@ -577,11 +601,11 @@ def plot_histogram_energy(Sequences, bins, ax):
 	handles, labels = ax.get_legend_handles_labels()
 	ax.legend(np.concatenate(([],handles)),np.concatenate(([],labels)), loc = 2, fontsize = 20)
 
-	return energies
+	return energies, data_energies
 
 def plot_scatter_hamming_distance_energy(distances, energies, ax):
 
-	ax.scatter(distances, energies, color = 'indigo', s = 25, marker = '^')
+	ax.scatter(distances, energies, color = 'steelblue', s = 15, marker = '^')
 	ax.hlines(energies[0],0,9, linestyle = 'dashed', label = r'Master Seq. energy $\epsilon_0$')
 	#ax.set_yscale('log')
 	#ax.set_ylim(1,1e10)
@@ -644,32 +668,45 @@ def run_ensemble_deterministic_model(Sequences, n_linages, n_seq, nu, beta, T, m
 		activated_linages_size = pickle.load( open( "../Text_files/ensemble_deterministic_model_linage_sizes.pkl", "rb" ) )
 	#_____________________________________________________________________
 
+	N_total = np.zeros(int(T/dt))
 	activation_time_series = np.zeros(int(T/dt))
 	activation_time_series_2 = np.zeros(int(T/dt))
+	entropy = np.zeros(int(T/dt))
 
 	for i in range(n_sim):
 		if(i%int((n_sim/5))==0):
 			print(i, '...')
 		Sub_Sequences = np.random.choice(Sequences, n_linages)
+		for i in range(n_linages):
+			Sub_Sequences[i].active = False
 		Model = Deterministic_simulation(Sequences = Sub_Sequences, n_linages=n_linages, T = T, U = U, gamma = gamma, nu = nu, R = R, beta = beta, master_Sequence_energy = master_Sequence_energy, dt = dt)
 		Model.ODE()
 		# Add the linage sizes to the statistics
 		activated_linages_size = np.append(activated_linages_size, [Model.linages_time_series[i,-1] for i in range(n_linages) if Model.Sequences[i].active])
+		# Sum up total population size
+		N_total_i = np.sum(Model.linages_time_series, axis=0)
+		# Calculate linage frequencies and entropy
+		linage_freqs = Model.linages_time_series/N_total_i
+		entropy_i = np.array([np.sum(-1*linage_freqs[:,t]*np.log(linage_freqs[:,t])) for t in range(int(len(Model.time_series)))])
 		# Sum up columns in array Model.activation_time_series for the activated linages
 		activation_time_series_i = np.array([np.sum(Model.activation_time_series[:,i]) for i in range(int(len(Model.activation_time_series[0,:])))])
 		# Sum the last array to the main arrays
 		activation_time_series = activation_time_series + activation_time_series_i
 		activation_time_series_2 = activation_time_series_2 + (activation_time_series_i)**2
+		N_total = N_total + N_total_i
+		entropy = entropy + entropy_i
 
 
 	activation_time_series = activation_time_series/(n_sim)
 	activation_time_series_2 = (activation_time_series_2)/(n_sim)
 	activation_time_series_var = activation_time_series_2-activation_time_series**2
-
+	N_total = N_total/(n_sim)
+	entropy = entropy/(n_sim)
     
 	pickle.dump(activated_linages_size, open( "../Text_files/ensemble_deterministic_model_linage_sizes.pkl", "wb" ) )
 	pickle.dump(activation_time_series, open( "../Text_files/ensemble_deterministic_model_activation_time_series.pkl", "wb" ) )
 	pickle.dump(activation_time_series_var, open( "../Text_files/ensemble_deterministic_model_activation_time_series_var.pkl", "wb" ) )
-
+	pickle.dump(N_total, open( "../Text_files/ensemble_deterministic_model_N_total.pkl", "wb" ) )
+	pickle.dump(entropy, open( "../Text_files/ensemble_deterministic_model_entropy.pkl", "wb" ) )
 
 	print('Ensemble size:', len(activated_linages_size))
