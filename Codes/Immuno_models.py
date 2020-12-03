@@ -7,6 +7,10 @@ from datetime import datetime, timedelta
 import scipy.special as sc
 import seaborn as sns
 import pickle
+from scipy.optimize import curve_fit
+
+
+
 
 class Sequence():
 	"""docstring for Sequence"""
@@ -63,6 +67,10 @@ class Sequence():
 		self.calculate_delta_energy(Energy_Matrix = Energy_Matrix, old_letter = old_letter, new_letter = new_letter)
 	
 		#Ask Michael about the best way to produce the energy
+
+#----------------- Models -----------------
+
+#Inside the classes for models, there are some built-in functions for generating plots of individual simulations.
 
 class Deterministic_simulation():
 	"""docstring for Deterministic_simulation"""
@@ -449,33 +457,8 @@ class Stochastic_simulation():
 		ax.set_ylabel(r'Entropy', fontsize = 20)
 		ax.tick_params(labelsize = 20)
 
-def plot_energy_matrix(Energy_Matrix, Alphabet, title, ax):
 
-	M = Energy_Matrix
-	
-	Alphabet = Alphabet
-
-	sns.heatmap(np.flip(M, axis = 0), ax = ax, cmap=plt.cm.RdBu_r)
-	ax.set_title(title, fontsize = 22)
-	ax.tick_params(labelsize = 20)
-	ax.set_xticklabels(Alphabet)
-	ax.set_yticklabels(np.flip(Alphabet));
-	cbar = ax.collections[0].colorbar
-	cbar.ax.tick_params(labelsize=18)
-		
-def print_raw_file(Sequences, filename):
-
-	file = open(filename, 'w+')
-	for i in range(len(Sequences)):
-		np.savetxt(file, np.array([Sequences[i].parent_id, Sequences[i].id]), fmt = '%d', delimiter = ' ', newline = ' ')
-		file.write("\n")
-	file.close()
-
-def generate_newick_format(filename):
-
-	file  = np.loadtxt(filename, dtype = int)
-	n_f = '0()'
-	print(file)
+#----------------- Functions -----------------
 
 def hamming_distance(chaine1, chaine2):
 
@@ -505,6 +488,229 @@ def calculate_energy(Energy_Matrix, seq1, seq2):
 		pos_j = np.where(np.isin(Alphabet,list_seq2[i]))[0][0]
 		Energy += M[pos_i][pos_j]
 	return Energy
+
+def my_linear_func(x, a, b):
+
+    return a + b*x
+
+def my_quadratic_func(x, a, b, c):
+
+    return np.log(a)+np.log(np.sqrt(-b)) + b*(x-c)**2
+
+
+#----------------- Plots -----------------
+
+def plot_energy_matrix(Energy_Matrix, Alphabet, title, ax):
+
+	M = Energy_Matrix
+	
+	Alphabet = Alphabet
+
+	sns.heatmap(np.flip(M, axis = 0), ax = ax, cmap=plt.cm.RdBu_r, center = 0, cbar = True)
+	ax.set_title(title, fontsize = 22)
+	ax.tick_params(labelsize = 20)
+	ax.set_xticklabels(Alphabet)
+	ax.set_yticklabels(np.flip(Alphabet));
+	cbar = ax.collections[0].colorbar
+	cbar.ax.tick_params(labelsize=18)
+
+def plot_histogram_hamming_distance(Sequences, ax):
+
+	distances = np.array([i.hamming_distance for i in Sequences])
+	data_distances = np.histogram(distances, bins=range(int(max(distances))))
+
+	#ax.plot(data_distances[1][0:-1], scipy.special.comb(9, data_distances[1][0:-1]), linewidth = 4 , label = 'Binary')
+	ax.plot(data_distances[1][0:-1], sc.comb(9, data_distances[1][0:-1])*((20-1)**data_distances[1][0:-1]), color = 'steelblue', linewidth = 4 , label = '20-Alphabet')
+	#ax.plot(data_distances[1][0:-1], scipy.special.comb(9, data_distances[1][0:-1])*((4-1)**data_distances[1][0:-1]), linewidth = 4 , label = '4-Alphabet')
+
+	#ax.plot(data_distances[1][0:-1], np.exp(4*data_distances[1][0:-1]), linewidth = 4, label = r'$e^{\lambda r}$')
+	ax.plot(data_distances[1][0:-1], data_distances[0], linewidth = 4, label = 'Data', linestyle = '', marker = 'o')
+
+	ax.set_yscale('log')
+	#ax.set_ylim(1,1e8)
+	ax.set_xlabel(r'Hamming Distance $r$', fontsize = 20)
+	ax.set_ylabel(r'', fontsize = 20)
+	ax.tick_params(labelsize = 20)
+	handles, labels = ax.get_legend_handles_labels()
+	ax.legend(np.concatenate(([],handles)),np.concatenate(([],labels)), loc = 2, fontsize = 20)
+
+	return distances
+
+def plot_histogram_energy(Sequences, bins, ax):
+
+	energies = np.array([i.energy for i in Sequences])
+	data_energies = np.histogram(energies, bins=bins)
+
+	ax.plot(data_energies[1][0:-1], data_energies[0], linewidth = 4, color = 'steelblue', label = 'Data', linestyle = '', marker = 'o')
+	ax.set_yscale('log')
+	#ax.set_ylim(1,1e10)
+	ax.set_xlabel(r'Energy $r$', fontsize = 20)
+	ax.set_ylabel(r'', fontsize = 20)
+	ax.tick_params(labelsize = 20)
+	handles, labels = ax.get_legend_handles_labels()
+	ax.legend(np.concatenate(([],handles)),np.concatenate(([],labels)), loc = 2, fontsize = 20)
+
+	return energies, data_energies
+
+def plot_scatter_hamming_distance_energy(distances, energies, ax):
+
+	ax.scatter(distances, energies, color = 'steelblue', s = 15, marker = '^')
+	ax.hlines(energies[0],0,9, linestyle = 'dashed', label = r'Master Seq. energy $\epsilon_0$')
+	#ax.set_yscale('log')
+	#ax.set_ylim(1,1e10)
+	ax.set_xlabel(r'Hamming distance $d$', fontsize = 20)
+	ax.set_ylabel(r'Energy $\epsilon$', fontsize = 20)
+	ax.tick_params(labelsize = 20)
+	ax.legend(loc = 0, fontsize = 20)
+
+def plot_histogram_energy_subsampling(bins, n_linages, Sequences, sub_energies, fig, ax):
+
+	energies, data_energies = plot_histogram_energy(Sequences = Sequences, bins = bins, ax = ax)
+
+	#____________ fit and plot gaussian function
+	popt, pcov = curve_fit(my_quadratic_func, data_energies[1][0:-1], np.log(data_energies[0]) , p0 = (5e5/np.sqrt(np.pi), -0.04, -30))
+	print(r'integral a*$\pi$:',popt[0]*np.pi)
+	r_array = np.linspace(np.min(energies)-5, np.max(energies)+5, 1000)
+	ax.plot(r_array, np.exp(my_quadratic_func(r_array, *popt)), linestyle = '--', linewidth = 4, color = 'steelblue', alpha = 0.4)
+	r_array2 = np.linspace(-80, 50, 10000)
+
+
+	#____________ Plot histogram of sub_energies
+	data_energies = np.histogram(sub_energies, bins=bins, density = False)
+	ax.plot(data_energies[1][0:-1], data_energies[0]/(5000), linewidth = 4, color = 'indigo', label = 'After samplig', linestyle = '', marker = 'o')
+	ax.plot(r_array, (2e2/5e5)*np.exp(my_quadratic_func(r_array, *popt)), linestyle = '--', linewidth = 4, color = 'indigo', alpha = 0.4)
+	ax.plot(r_array, (2e2/5e5)*popt[0]*np.sqrt(-popt[1])*(1+popt[1]*(r_array-popt[2])**2), label = 'model 2')
+	ax.set_ylim(1,8e4)
+	handles, labels = ax.get_legend_handles_labels()
+	ax.legend(np.concatenate(([],handles)),np.concatenate(([],labels)), loc = 2, fontsize = 20)
+
+	#____________ Create inset with the integral of the gaussian function  
+	left, bottom, width, height = [0.65, 0.67, 0.25, 0.2]
+	ax2 = fig.add_axes([left, bottom, width, height])
+	ax2.plot(r_array, np.cumsum((2e2/5e5)*np.exp(my_quadratic_func(r_array, *popt))*(np.max(energies)-np.min(energies))/1000), linewidth = 2, color = 'indigo')
+	ax2.set_xlabel(r'Energy $r$', fontsize = 15)
+	ax2.set_ylabel(r'', fontsize = 15)
+	ax2.tick_params(labelsize = 15)
+	ax2.yaxis.tick_right()
+	ax2.set_yscale('log')
+
+	return popt, pcov
+
+#----------------- Generate files -----------------
+
+		
+def print_raw_file(Sequences, filename):
+
+	file = open(filename, 'w+')
+	for i in range(len(Sequences)):
+		np.savetxt(file, np.array([Sequences[i].parent_id, Sequences[i].id]), fmt = '%d', delimiter = ' ', newline = ' ')
+		file.write("\n")
+	file.close()
+
+def generate_newick_format(filename):
+
+	file  = np.loadtxt(filename, dtype = int)
+	n_f = '0()'
+	print(file)
+
+
+#----------------- Plots for ensemble averages -----------------
+
+def plot_activation_rate_ensemble_deterministic(T, dt, popt, energies, ax):
+
+	N_A = 6.02214076e23
+
+	#____________ Read and plot the activation of linages as function of antigen concetration
+	t_new = np.linspace(0, T, int(T/dt))
+	activation_time_series = pickle.load( open( "../Text_files/ensemble_deterministic_model_activation_time_series.pkl", "rb" ) )
+	activation_time_series_var = pickle.load( open( "../Text_files/ensemble_deterministic_model_activation_time_series_var.pkl", "rb" ) )
+	ax.plot(np.exp(t_new[1:][::50][np.where(activation_time_series[1:][::50]!=0)])/N_A, activation_time_series[1:][::50][np.where(activation_time_series[1:][::50]!=0)], linestyle = '', marker = '.', ms = 20, linewidth = 4, color = 'indigo', label = 'simulation')
+	ax.fill_between(np.exp(t_new[1:][::10][np.where(activation_time_series[1:][::10]!=0)])/N_A , activation_time_series[1:][::10][np.where(activation_time_series[1:][::10]!=0)] - np.sqrt(activation_time_series_var[1:][::10][np.where(activation_time_series[1:][::10]!=0)]), activation_time_series[1:][::10][np.where(activation_time_series[1:][::10]!=0)] + np.sqrt(activation_time_series_var[1:][::10][np.where(activation_time_series[1:][::10]!=0)]), linewidth = 4, color = 'indigo', alpha = 0.2)
+
+	#____________ Plot the gaussian integral
+	r_array = np.linspace(np.min(energies), np.max(np.log(np.exp(t_new[1:][::10][np.where(activation_time_series[1:][::10]!=0)])/N_A)), 5000)
+	ax.plot(np.exp(r_array), np.cumsum((2e2/5e5)*np.exp(my_quadratic_func(r_array, *popt))*(np.max(energies)-np.min(energies))/5000), linestyle = '--', ms = 20, linewidth = 4, color = 'violet', label = 'Gaussian integral')
+
+	ax.set_xlabel(r'Antigen concentration $[M]$', fontsize = 20)
+	ax.set_ylabel(r'Activated linages', fontsize = 20)
+	ax.tick_params(labelsize = 22)
+	ax.set_xscale('log')
+	ax.set_yscale('log')
+	ax.set_ylim(0.1, max(activation_time_series[1:]*1.5))
+	ax.legend(loc = 0, fontsize = 20)
+
+def plot_size_distribution_ensemble_deterministic(T, dt, popt, ax):
+
+	N_A = 6.02214076e23
+	#____________ Read and plot the distribution of clone sizes
+	activated_linages_size = pickle.load( open( "../Text_files/ensemble_deterministic_model_linage_sizes.pkl", "rb" ) )
+	data_activated_linages_log = np.histogram(activated_linages_size, bins = np.logspace(0,np.log10(np.max(activated_linages_size)*2),150), density = False)
+	#data_activated_linages_lin = np.histogram(activated_linages_size, bins = np.linspace(1,np.max(activated_linages_size),20), density = False)
+	#Distribution
+	ax.plot(data_activated_linages_log[1][:-1][np.where(data_activated_linages_log[0]!=0)], data_activated_linages_log[0][np.where(data_activated_linages_log[0]!=0)], marker = '.', ms = 20, linestyle = '', linewidth = 3, color = 'indigo', label = 'Simulation')
+	#ax.plot(data_activated_linages_lin[1][:-1][np.where(data_activated_linages_lin[0]!=0)], data_activated_linages_lin[0][np.where(data_activated_linages_lin[0]!=0)], marker = '.', ms = 20, linestyle = '-', linewidth = 3, color = 'tab:brown', label = 'linear')
+
+	#____________ Plot the gaussian integral
+	n_array = np.linspace(1,np.max(activated_linages_size), 100)
+	ax.plot(n_array, ((len(activated_linages_size)/2e2)*(2e2/5e5)*np.exp(my_quadratic_func(np.log((np.exp(T)/N_A)/(n_array)), *popt))), linestyle = '--', ms = 20, linewidth = 4, color = 'violet', label = 'Gaussian model')
+
+	ax.set_xlabel(r'Clone size $n_i$', fontsize = 20)
+	ax.set_ylabel(r'counts', fontsize = 20)
+	ax.tick_params(labelsize = 22)
+	ax.set_xscale('log')
+	ax.set_yscale('log')
+	#ax.set_xlim(.9,1000)
+	ax.legend(loc = 0, fontsize = 20)
+
+def plot_N_total_ensemble_deterministic(T, dt, popt, ax):
+
+	N_A = 6.02214076e23
+	t_new = np.linspace(0, T, int(T/dt))
+
+	#____________ Read and plot the distribution of clone sizes
+	N_total_sim = pickle.load( open( "../Text_files/ensemble_deterministic_model_N_total.pkl", "rb" ) )
+
+	#Total linage size
+	ax.plot(t_new[::50], N_total_sim[::50], marker = '.', ms = 20, linestyle = '', linewidth = 3, color = 'indigo', label = 'Simulation')
+
+	#____________ Plot the gaussian integral
+	N_total = np.array([np.cumsum(np.exp(t-np.linspace(0,t, 100))*(2e2/5e5)*np.exp(my_quadratic_func(np.log(np.exp(np.linspace(0,t, 100))/N_A), *popt))*(t/100))[-1] + 200 - np.cumsum((2e2/5e5)*np.exp(my_quadratic_func(np.log(np.exp(np.linspace(0,t, 100))/N_A), *popt))*(t/100))[-1] for t in t_new])
+	ax.plot(t_new, N_total, linestyle = '--', linewidth = 4, color = 'violet', alpha = 0.4, label = 'gaussian model')
+
+	ax.set_xlabel(r'Time $t$', fontsize = 20)
+	ax.set_ylabel(r'size $N_{total}$', fontsize = 20)
+	ax.tick_params(labelsize = 22)
+	#ax.set_xscale('log')
+	ax.set_yscale('log')
+	ax.set_xlim(T/2,T)
+	ax.legend(loc = 0, fontsize = 20)
+
+def plot_entropy_ensemble_deterministic(T, dt, popt, ax):
+
+	N_A = 6.02214076e23
+
+	t_new = np.linspace(0, T, int(T/dt))
+	#____________ Read and plot the distribution of clone sizes
+	entropy = pickle.load( open( "../Text_files/ensemble_deterministic_model_entropy.pkl", "rb" ) )
+
+	#Total linage size
+	ax.plot(t_new[::50], entropy[::50], marker = '.', ms = 20, linestyle = '', linewidth = 3, color = 'indigo', label = 'Simulation')
+
+	#____________ Plot the gaussian integral
+	N_total = np.array([np.cumsum(np.exp(t-np.linspace(0,t, 100))*(2e2/5e5)*np.exp(my_quadratic_func(np.log(np.exp(np.linspace(0,t, 100))/N_A), *popt))*(t/100))[-1] + 200 - np.cumsum((2e2/5e5)*np.exp(my_quadratic_func(np.log(np.exp(np.linspace(0,t, 100))/N_A), *popt))*(t/100))[-1] for t in t_new])
+	N_alpha_log_N_alpha = np.array([np.cumsum((np.exp(t-np.linspace(0,t, 100))*(t-np.linspace(0,t, 100))*(2e2/5e5)*np.exp(my_quadratic_func(np.log(np.exp(np.linspace(0,t, 100))/N_A), *popt)))*(t/100))[-1] for t in t_new])
+
+	ax.plot(t_new, (-1/N_total)*(N_alpha_log_N_alpha) + np.log(N_total), linestyle = '--', linewidth = 4, color = 'violet', alpha = 0.4, label = 'gaussian model')
+
+	ax.set_xlabel(r'Time $t$', fontsize = 20)
+	ax.set_ylabel(r'Entropy $S_{linages}$', fontsize = 20)
+	ax.tick_params(labelsize = 22)
+	#ax.set_xscale('log')
+	ax.set_yscale('log')
+	ax.set_xlim(T/2,T)
+	ax.legend(loc = 0, fontsize = 20)
+
+#----------------------------------------------------------------
 
 def generate_Sequences(n_seq, Energy_Matrix):
 
@@ -564,55 +770,6 @@ def generate_Sequences(n_seq, Energy_Matrix):
 	file_2.close()
 
 	return Sequences
-
-def plot_histogram_hamming_distance(Sequences, ax):
-
-	distances = np.array([i.hamming_distance for i in Sequences])
-	data_distances = np.histogram(distances, bins=range(int(max(distances))))
-
-	#ax.plot(data_distances[1][0:-1], scipy.special.comb(9, data_distances[1][0:-1]), linewidth = 4 , label = 'Binary')
-	ax.plot(data_distances[1][0:-1], sc.comb(9, data_distances[1][0:-1])*((20-1)**data_distances[1][0:-1]), color = 'steelblue', linewidth = 4 , label = '20-Alphabet')
-	#ax.plot(data_distances[1][0:-1], scipy.special.comb(9, data_distances[1][0:-1])*((4-1)**data_distances[1][0:-1]), linewidth = 4 , label = '4-Alphabet')
-
-	#ax.plot(data_distances[1][0:-1], np.exp(4*data_distances[1][0:-1]), linewidth = 4, label = r'$e^{\lambda r}$')
-	ax.plot(data_distances[1][0:-1], data_distances[0], linewidth = 4, label = 'Data', linestyle = '', marker = 'o')
-
-	ax.set_yscale('log')
-	#ax.set_ylim(1,1e8)
-	ax.set_xlabel(r'Hamming Distance $r$', fontsize = 20)
-	ax.set_ylabel(r'', fontsize = 20)
-	ax.tick_params(labelsize = 20)
-	handles, labels = ax.get_legend_handles_labels()
-	ax.legend(np.concatenate(([],handles)),np.concatenate(([],labels)), loc = 2, fontsize = 20)
-
-	return distances
-
-def plot_histogram_energy(Sequences, bins, ax):
-
-	energies = np.array([i.energy for i in Sequences])
-	data_energies = np.histogram(energies, bins=bins)
-
-	ax.plot(data_energies[1][0:-1], data_energies[0], linewidth = 4, color = 'steelblue', label = 'Data', linestyle = '', marker = 'o')
-	ax.set_yscale('log')
-	#ax.set_ylim(1,1e10)
-	ax.set_xlabel(r'Energy $r$', fontsize = 20)
-	ax.set_ylabel(r'', fontsize = 20)
-	ax.tick_params(labelsize = 20)
-	handles, labels = ax.get_legend_handles_labels()
-	ax.legend(np.concatenate(([],handles)),np.concatenate(([],labels)), loc = 2, fontsize = 20)
-
-	return energies, data_energies
-
-def plot_scatter_hamming_distance_energy(distances, energies, ax):
-
-	ax.scatter(distances, energies, color = 'steelblue', s = 15, marker = '^')
-	ax.hlines(energies[0],0,9, linestyle = 'dashed', label = r'Master Seq. energy $\epsilon_0$')
-	#ax.set_yscale('log')
-	#ax.set_ylim(1,1e10)
-	ax.set_xlabel(r'Hamming distance $d$', fontsize = 20)
-	ax.set_ylabel(r'Energy $\epsilon$', fontsize = 20)
-	ax.tick_params(labelsize = 20)
-	ax.legend(loc = 0, fontsize = 20)
 
 def run_ensemble_linage_size_distribution(Sequences, n_linages, n_seq, nu, beta, T, master_Sequence_energy, n_sim, new = False):
 	n_linages = n_linages
