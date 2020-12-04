@@ -10,8 +10,6 @@ import pickle
 from scipy.optimize import curve_fit
 
 
-
-
 class Sequence():
 	"""docstring for Sequence"""
 	def __init__(self, seq_id, master_sequence, energy_parent, complementary_sequence, Energy_Matrix, parent,  parent_id = 0, Master_Seq = False):
@@ -116,7 +114,7 @@ class Deterministic_simulation():
 		#ax.legend(np.concatenate(([Line2D([0], [0], color='tab:red', linewidth=4, linestyle='solid', ms = 8)],handles)),np.concatenate(([r'$n_b(r, \rho)$'],labels)), loc = 0, fontsize = 20)
 
 	def plot_prob_binding(self, ax):
-		rho_array = np.logspace(int(np.log10(max(self.antigen_time_series)/self.N_A)/2), np.log10(max(self.antigen_time_series)/self.N_A), 5)
+		rho_array = np.logspace(int(np.log10(max(self.antigen_time_series)/self.N_A)) - 4, np.log10(max(self.antigen_time_series)/self.N_A)  + 2, 5)
 		colors = plt.cm.Reds(np.linspace(0,1,len(rho_array)))
 		energies  = np.array([self.Sequences[i].energy for i in range(int(len(self.Sequences)))])
 		energies_array = np.linspace(np.min(energies),np.max(energies),100)
@@ -174,17 +172,15 @@ class Deterministic_simulation():
 
 		rho_array = np.logspace(np.log10(1/self.N_A), np.log10(max(self.antigen_time_series)/self.N_A), 5)
 		colors = plt.cm.Reds(np.linspace(0,1,len(rho_array)))
-		data_energies = ax.hist([Sequences[i].energy for i in range(int(len(Sequences)))], bins = bins, align = 'left', label = r'$S(\epsilon)$', color = 'lightsteelblue', alpha = 0.5)
-		#ax.plot(data_energies[1][0:-1], sc.comb(9, data_energies[1][0:-1])*((20-1)**data_energies[1][0:-1]), linewidth = 4 , color = 'lightsteelblue', alpha = 0.6)
+		energies = np.array([Sequences[i].energy for i in range(int(len(Sequences)))])
+		data_energies = ax.hist(energies, bins = bins, align = 'left', label = r'$S(\epsilon)$', color = 'lightsteelblue', alpha = 0.5)
 
-		ax.hist([self.Sequences[i].energy for i in range(int(len(self.Sequences)))], bins = bins, align = 'left', label = r'$US(\epsilon)$', color = 'indigo', alpha = 0.6)
-		#ax.plot(data_energies[1][0:-1], self.U*sc.comb(9, data_energies[1][0:-1])*((20-1)**data_energies[1][0:-1]), linewidth = 4 , color = 'indigo', alpha = 0.6)
+		sub_energies = np.array([self.Sequences[i].energy for i in range(int(len(self.Sequences)))])
+		ax.hist(sub_energies , bins = np.linspace(np.min(sub_energies), np.max(sub_energies), bins), align = 'left', label = r'$US(\epsilon)$', color = 'indigo', alpha = 0.6)
 
-		ax.hist([self.Sequences[i].energy for i in range(int(len(self.Sequences))) if self.Sequences[i].active], bins = bins, align = 'left', label = r'Activated Linages', color = 'indianred', alpha = 0.8)
-		#for i, rho in enumerate(rho_array):
-		#	ax.plot(data_energies[1][0:-1], self.U*sc.comb(9, data_energies[1][0:-1].astype(int))*((20-1)**data_energies[1][0:-1])*(1/(1+np.exp(self.master_Sequence_energy + data_energies[1][0:-1] - np.log(rho)))) , color = colors[i], linestyle = 'dashed', linewidth = 3)
-
-		#ax.set_ylim(0.1, 2e5)    
+		sub_energies_activated = np.array([self.Sequences[i].energy for i in range(int(len(self.Sequences))) if self.Sequences[i].active])
+		ax.hist(sub_energies_activated, bins = np.linspace(np.min(sub_energies), np.max(sub_energies), bins), align = 'left', label = r'Activated Linages', color = 'indianred', alpha = 0.8)
+  
 		ax.set_yscale('log')
 		ax.set_xlabel(r'Energy $\epsilon$', fontsize = 20)
 		ax.set_ylabel(r'Number of linages', fontsize = 20)
@@ -215,15 +211,11 @@ class Deterministic_simulation():
 	def plot_k_largest_linages(self, k, ax):
 
 		#Calculate array of the frequencies of the largest k linages
-		Seq_states = [i.active for i in self.Sequences]
 		Seq_sizes = self.linages_time_series[:,-1]
 		k = k
 		biggest_k_linages_sizes = np.sort(Seq_sizes)[-k:]
 		Pos = np.array([i for i, j in enumerate(Seq_sizes) if np.isin(j,biggest_k_linages_sizes)])
 		biggest_k_linages = self.linages_time_series[Pos,:]
-		#for i in range(1,int(len(self.linages_time_series[0,:]))):
-		#    biggest_k_linages = np.vstack((biggest_k_linages, self.linages_time_series[Pos,i]))
-		#biggest_k_linages_freq = np.transpose(biggest_k_linages)/np.sum(np.transpose(biggest_k_linages), axis = 0)
 		biggest_k_linages_freq = biggest_k_linages/np.sum(biggest_k_linages, axis = 0)
 
 		ax.stackplot(self.time_series, biggest_k_linages_freq, alpha = 0.9);
@@ -237,12 +229,25 @@ class Deterministic_simulation():
 	def plot_entropy_k_largest_linages(self, k, biggest_k_linages_freq, ax):
 
 		#Calculate entropy
-		entropy = [np.sum(-1*biggest_k_linages_freq[:,t]*np.log(biggest_k_linages_freq[:,t])) for t in range(int(len(self.time_series)))]
+		entropy = np.array([np.sum(-1*biggest_k_linages_freq[:,t]*np.log(biggest_k_linages_freq[:,t])) for t in range(int(len(self.time_series)))])
 		ax.plot(self.time_series[::50], entropy[::50], marker = 'o', ms = 8, linestyle = '', linewidth = '4', color = 'olive', label = 'Simulation')
 		#ax[1].set_yscale('log')
 		ax.set_xlabel(r'Time $t$', fontsize = 20)
 		ax.set_ylabel(r'Entropy', fontsize = 20)
 		ax.tick_params(labelsize = 20)
+
+	def plot_normalized_entropy_k_largest_linages(self, k, biggest_k_linages_freq, ax):
+
+		#Calculate entropy
+		entropy = np.array([np.sum(-1*biggest_k_linages_freq[:,t]*np.log(biggest_k_linages_freq[:,t])) for t in range(int(len(self.time_series)))])
+		normalized_entropy = entropy/np.log(len(biggest_k_linages_freq))
+		ax.plot(self.time_series[::50], normalized_entropy[::50], marker = 'o', ms = 8, linestyle = '', linewidth = '4', color = 'olive', label = 'Simulation')
+		#ax[1].set_yscale('log')
+		ax.set_xlabel(r'Time $t$', fontsize = 20)
+		ax.set_ylabel(r'Entropy', fontsize = 20)
+		ax.tick_params(labelsize = 20)
+
+		return normalized_entropy
 		
 class Stochastic_simulation():
 	"""docstring for Stochastic_simulation"""
@@ -740,7 +745,7 @@ def generate_Sequences(n_seq, Energy_Matrix):
 	#file.write("\n")
 	np.savetxt(file, np.array([str(Master_Sequence.id)+'\t', str(Master_Sequence.parent_id)]), fmt='%s', delimiter='', newline='', header = 'node\t parent\n', comments='')
 	file.write("\n")
-	np.savetxt(file_1, np.array([str(Master_Sequence.id)+'\t', str(Master_Sequence.parent_id)+'\t', str(0)+'\t' , str(0)]), fmt='%s', delimiter='', newline='', header = 'Node\t Parent\t Time\t SigClade\n', comments='')
+	np.savetxt(file_1, np.array([str(Master_Sequence.id)+'\t', str(Master_Sequence.parent_id)+'\t', str(43830)+'\t' , str(0)]), fmt='%s', delimiter='', newline='', header = 'Node\t Parent\t Time\t SigClade\n', comments='')
 	file_1.write("\n")
 	n_seq = n_seq
 	for i in range(1, n_seq):
@@ -756,12 +761,12 @@ def generate_Sequences(n_seq, Energy_Matrix):
 	            succ = True
 	    np.savetxt(file, np.array([str(new_seq.id)+'\t', str(parent.parent_id)]), fmt='%s', delimiter='', newline='')
 	    file.write("\n")
-	    np.savetxt(file_1, np.array([str(new_seq.id)+'\t', str(parent.parent_id)+'\t', str(new_seq.hamming_distance)+'\t', str(0)]), fmt='%s', delimiter='', newline='')
+	    np.savetxt(file_1, np.array([str(new_seq.id)+'\t', str(parent.parent_id)+'\t', str(43830 + int(new_seq.energy - Master_Sequence.energy))+'\t', str(0)]), fmt='%s', delimiter='', newline='')
 	    file_1.write("\n")
 	    
 	for i in range(1, n_seq):
 	    if(Sequences[i].tree_position==1):
-	        new_date = zero_date + timedelta(Sequences[i].hamming_distance)
+	        new_date = zero_date + timedelta(Sequences[i].energy - Sequences[0].energy)
 	        np.savetxt(file_2, np.array([str(Sequences[i].id)+'\t', 'A/Germany/'+str(i)+'/2020'+'\t', 'Germany'+'\t', 'EPI_ISL_'+str(i)+'\t', str(new_date.year)+'-'+str(new_date.month)+'-'+str(new_date.day)+'\t', '0']),fmt='%s', delimiter='', newline='')
 	        file_2.write("\n")
         
