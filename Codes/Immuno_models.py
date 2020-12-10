@@ -251,6 +251,27 @@ class Deterministic_simulation():
 		ax.tick_params(labelsize = 20)
 
 		return normalized_entropy
+
+	def plot_entropy_drop(self, k_array, ax1, ax2):
+
+		#____________ Create array for entropy drop. The entropy is always normalized by the maximum
+
+		entropy_drop = np.array([0])
+
+		for i, k in enumerate(k_array[1:]):
+
+		    biggest_k_linages_freq = self.plot_k_largest_linages(k=k, ax=ax1[i,0])
+		    normalized_entropy = self.plot_normalized_entropy_k_largest_linages(k=k, biggest_k_linages_freq = biggest_k_linages_freq, ax=ax1[i,1])
+		    entropy_drop = np.append(entropy_drop, normalized_entropy[-1] - normalized_entropy[0])
+
+		
+		#____________ Plot entropy drop as a fucntion of k
+		ax2.plot(k_array[1:], abs(entropy_drop)[1:], linestyle = '--', marker = '^', ms = 20, linewidth = 4, color = 'indianred', alpha = 0.8, label = 'Simulation')
+		ax2.set_xlabel(r'$k$', fontsize = 20)
+		ax2.set_ylabel(r'$\Delta S$', fontsize = 20)
+		ax2.tick_params(labelsize = 22)
+		ax2.set_xscale('log')
+		ax2.legend(loc = 0, fontsize = 20)
 		
 class Stochastic_simulation():
 	"""docstring for Stochastic_simulation"""
@@ -624,10 +645,11 @@ def generate_newick_format(filename):
 
 #----------------- Plots for ensemble averages -----------------
 
-def plot_activation_rate_ensemble_deterministic(beta, T, initial_time, dt, popt, energies, comment, gaussian, exponential, ax):
+def plot_activation_rate_ensemble_deterministic(beta, T, initial_time, to, dt, popt, energies, comment, gaussian, exponential, ax):
 
 	N_A = 6.02214076e23
-
+	b = 1.26
+	beta = 0.2
 	#____________ Read and plot the activation of linages as function of antigen concetration
 	t_new = np.linspace(initial_time, T, int((T-initial_time)/dt))
 	activation_time_series = pickle.load( open( "../Text_files/ensemble_deterministic_model_activation_time_series"+comment+".pkl", "rb" ) )
@@ -640,34 +662,45 @@ def plot_activation_rate_ensemble_deterministic(beta, T, initial_time, dt, popt,
 		r_array = np.linspace(np.min(energies), np.max(np.log(np.exp(t_new[1:][::10][np.where(activation_time_series[1:][::10]!=0)])/N_A)), 5000)
 		ax.plot(np.exp(r_array), np.cumsum((2e2/5e5)*np.exp(my_quadratic_func(r_array, *popt))*(np.max(energies)-np.min(energies))/5000), linestyle = '--', ms = 20, linewidth = 4, color = 'violet', label = 'Gaussian integral')
 
+	#____________ Plot the exponential integral
+	if(exponential):
+		b = 1.26
+		beta = 0.2
+		rho_new = np.linspace(5e-18, 1e-16, 100)
+		ax.plot(rho_new, (1/(b*beta))*(np.exp(-beta*b*to)*(rho_new*N_A)**(b)-1), linewidth = 4, linestyle = 'dashed', alpha = 0.4, label = 'exponential model')
+
+
 	ax.set_xlabel(r'Antigen concentration $[M]$', fontsize = 20)
 	ax.set_ylabel(r'Activated linages', fontsize = 20)
 	ax.tick_params(labelsize = 22)
 	ax.set_xscale('log')
 	ax.set_yscale('log')
-	ax.set_ylim(0.1, max(activation_time_series[1:]*1.5))
+	#ax.set_ylim(0.1, max(activation_time_series[1:]*1.5))
 	ax.legend(loc = 0, fontsize = 20)
 
-def plot_size_distribution_ensemble_deterministic(T, dt, n_bins, density, popt, comment, gaussian, exponential, ax):
+def plot_size_distribution_ensemble_deterministic(T, to, dt, n_bins, density, popt, comment, gaussian, exponential, ax):
 
 	N_A = 6.02214076e23
+	b = 1.26
+	beta = 0.2
 	#____________ Read and plot the distribution of clone sizes
 	activated_linages_size = pickle.load( open( "../Text_files/ensemble_deterministic_model_linage_sizes"+comment+".pkl", "rb" ) )
 	bins = np.logspace(0,np.log10(np.max(activated_linages_size)*2), n_bins)
-	data_activated_linages_log = np.histogram(activated_linages_size, bins = bins, density = density)
+	data_activated_linages_log = np.histogram(activated_linages_size, bins = range(int(np.max(activated_linages_size))), density = True)
 	#data_activated_linages_lin = np.histogram(activated_linages_size, bins = np.linspace(1,np.max(activated_linages_size),20), density = False)
 	#Distribution
-	ax.plot(data_activated_linages_log[1][:-1][np.where(data_activated_linages_log[0]!=0)], np.cumsum(data_activated_linages_log[0][np.where(data_activated_linages_log[0]!=0)])[-1]-np.cumsum(data_activated_linages_log[0][np.where(data_activated_linages_log[0]!=0)]), marker = '.', ms = 20, linestyle = '', linewidth = 3, color = 'indigo', label = 'Simulation')
+	ax.plot(data_activated_linages_log[1][:-1][np.where(data_activated_linages_log[0]!=0)], 1-np.cumsum(data_activated_linages_log[0][np.where(data_activated_linages_log[0]!=0)]), marker = '.', ms = 20, linestyle = '', linewidth = 3, color = 'indigo', label = 'Simulation')
 	#ax.plot(data_activated_linages_lin[1][:-1][np.where(data_activated_linages_lin[0]!=0)], data_activated_linages_lin[0][np.where(data_activated_linages_lin[0]!=0)], marker = '.', ms = 20, linestyle = '-', linewidth = 3, color = 'tab:brown', label = 'linear')
-
+	n_array = np.linspace(1,np.max(activated_linages_size), 100)
 	#____________ Plot the gaussian integral
 	if(gaussian):
-		n_array = np.linspace(1,np.max(activated_linages_size), 100)
-		ax.plot(n_array, ((len(activated_linages_size)/2e2)*(2e2/5e5)*np.exp(my_quadratic_func(np.log((np.exp(T)/N_A)/(n_array)), *popt))), linestyle = '--', ms = 20, linewidth = 4, color = 'violet', label = 'Gaussian model')
+		ax.plot(n_array, 1-((len(activated_linages_size)/2e2)*(2e2/5e5)*np.exp(my_quadratic_func(np.log((np.exp(T)/N_A)/(n_array)), *popt))), linestyle = '--', ms = 20, linewidth = 4, color = 'violet', label = 'Gaussian model')
 
 	#____________ Plot the exponential integral
 	if(exponential):
-		ax.plot(np.linspace(1, 3e6, 100), 0.08*np.linspace(1, 3e6, 100)**(-1.26), linewidth = 4, linestyle = 'dashed', alpha = 0.4)
+		ax.plot(n_array, ((1/(beta*b))*(np.exp(beta*b*(T-to))*n_array**(-b*beta)-1))/((((1/(beta*b))*(np.exp(beta*b*(T-to))*n_array**(-b*beta)-1)))[0]), linewidth = 4, linestyle = 'dashed', alpha = 0.4, label = 'exponential model')
+
+
 
 
 	ax.set_xlabel(r'Clone size $n_i$', fontsize = 20)
@@ -678,9 +711,11 @@ def plot_size_distribution_ensemble_deterministic(T, dt, n_bins, density, popt, 
 	#ax.set_xlim(.9,1000)
 	ax.legend(loc = 0, fontsize = 20)
 
-def plot_N_total_ensemble_deterministic(T, initial_time, dt, popt, comment, gaussian, exponential, ax):
+def plot_N_total_ensemble_deterministic(T, initial_time, to, dt, popt, comment, gaussian, exponential, ax):
 
 	N_A = 6.02214076e23
+	b = 1.26
+	beta = 0.2
 	t_new = np.linspace(initial_time, T, int((T-initial_time)/dt))
 
 	#____________ Read and plot the distribution of clone sizes
@@ -694,17 +729,25 @@ def plot_N_total_ensemble_deterministic(T, initial_time, dt, popt, comment, gaus
 		N_total = np.array([np.cumsum(np.exp(t-np.linspace(0,t, 100))*(2e2/5e5)*np.exp(my_quadratic_func(np.log(np.exp(np.linspace(0,t, 100))/N_A), *popt))*(t/100))[-1] + 200 - np.cumsum((2e2/5e5)*np.exp(my_quadratic_func(np.log(np.exp(np.linspace(0,t, 100))/N_A), *popt))*(t/100))[-1] for t in t_new])
 		ax.plot(t_new, N_total, linestyle = '--', linewidth = 4, color = 'violet', alpha = 0.4, label = 'gaussian model')
 
+	#____________ Plot the exponential integral
+	if(exponential):
+		tau = np.exp(t_new-to)
+		N_total_exp = ((tau**(beta*b)-tau)/(beta*b-1)) + 200 - (1/(beta*b))*(tau**(beta*b)*-1)
+		ax.plot(t_new, N_total_exp, linewidth = 4, linestyle = 'dashed', alpha = 0.4, label = 'exponential model')
+
 	ax.set_xlabel(r'Time $t$', fontsize = 20)
 	ax.set_ylabel(r'size $N_{total}$', fontsize = 20)
 	ax.tick_params(labelsize = 22)
 	#ax.set_xscale('log')
 	ax.set_yscale('log')
-	ax.set_xlim(T/2,T)
+	#ax.set_xlim(T/2,T)
 	ax.legend(loc = 0, fontsize = 20)
 
-def plot_entropy_ensemble_deterministic(T, initial_time, dt, popt, comment, gaussian, exponential, ax):
+def plot_entropy_ensemble_deterministic(T, initial_time, to, dt, popt, comment, gaussian, exponential, ax):
 
 	N_A = 6.02214076e23
+	b = 1.26
+	beta = 0.2
 
 	t_new = np.linspace(initial_time, T, int((T-initial_time)/dt))
 	#____________ Read and plot the distribution of clone sizes
@@ -717,15 +760,22 @@ def plot_entropy_ensemble_deterministic(T, initial_time, dt, popt, comment, gaus
 	if(gaussian):
 		N_total = np.array([np.cumsum(np.exp(t-np.linspace(0,t, 100))*(2e2/5e5)*np.exp(my_quadratic_func(np.log(np.exp(np.linspace(0,t, 100))/N_A), *popt))*(t/100))[-1] + 200 - np.cumsum((2e2/5e5)*np.exp(my_quadratic_func(np.log(np.exp(np.linspace(0,t, 100))/N_A), *popt))*(t/100))[-1] for t in t_new])
 		N_alpha_log_N_alpha = np.array([np.cumsum((np.exp(t-np.linspace(0,t, 100))*(t-np.linspace(0,t, 100))*(2e2/5e5)*np.exp(my_quadratic_func(np.log(np.exp(np.linspace(0,t, 100))/N_A), *popt)))*(t/100))[-1] for t in t_new])
+		ax.plot(t_new, (-1/N_total)*(N_alpha_log_N_alpha) + np.log(N_total), linestyle = '--', linewidth = 4, color = 'violet', alpha = 0.4, label = 'gaussian model')
 
-	ax.plot(t_new, (-1/N_total)*(N_alpha_log_N_alpha) + np.log(N_total), linestyle = '--', linewidth = 4, color = 'violet', alpha = 0.4, label = 'gaussian model')
+	#____________ Plot the exponential integral
+	if(exponential):
+		tau = np.exp(t_new-to)
+		N_total_exp = ((tau**(beta*b)-tau)/(beta*b-1)) + 200 - (1/(beta*b))*(tau**(beta*b)*-1)
+		Entropy_exp = (1/(N_total_exp*(beta*b-1))) * (tau*np.log(tau)  - ((tau**(beta*b)-tau)/(beta*b-1))) + ((np.log(N_total_exp)*1)/(1))
+		ax.plot(t_new, Entropy_exp, linewidth = 4, linestyle = 'dashed', alpha = 0.4, label = 'exponential model')
+		ax.hlines(1/(1-beta*b), initial_time, T, linewidth = 4, linestyle = 'dashed', alpha = 0.4, label = r'$S_{\infty}$')
 
 	ax.set_xlabel(r'Time $t$', fontsize = 20)
-	ax.set_ylabel(r'Entropy $S_{linages}$', fontsize = 20)
+	ax.set_ylabel(r'Entropy $S_{Linages}$', fontsize = 20)
 	ax.tick_params(labelsize = 22)
 	#ax.set_xscale('log')
 	ax.set_yscale('log')
-	ax.set_xlim(T/2,T)
+	#ax.set_xlim(T/2,T)
 	ax.legend(loc = 0, fontsize = 20)
 
 #----------------------------------------------------------------
