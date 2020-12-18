@@ -73,17 +73,16 @@ class Sequence():
 
 class Deterministic_simulation():
 	"""docstring for Deterministic_simulation"""
-	def __init__(self, Sequences, n_linages, T, U, gamma, nu, R, beta, master_Sequence_energy, initial_time, dt):
+	def __init__(self, Sequences, n_linages, T, U, nu, beta, gamma, energy_translation, initial_time, dt):
 		super(Deterministic_simulation, self).__init__()
 		self.n_linages = n_linages
 		self.Sequences = Sequences
 		self.T = T
 		self.U = U
-		self.gamma = gamma
-		self.nu = nu
-		self.R = R
-		self.beta = beta
-		self.master_Sequence_energy = master_Sequence_energy
+		self.nu = nu #Linages growth rate
+		self.beta = beta #Antigen growth rate
+		self.gamma = gamma #Antigen clearance rate
+		self.energy_translation = energy_translation
 		self.dt = dt
 		self.N_A = 6.02214076e23
 
@@ -95,13 +94,17 @@ class Deterministic_simulation():
 		self.time_series = np.linspace(self.initial_time, self.T, int((self.T-self.initial_time)/self.dt))
 
 	def ODE(self):
+
 		self.antigen_time_series[0] = np.exp(self.beta*self.initial_time)
 		for t in range(1,int((self.T-self.initial_time)/self.dt)):
-			self.antigen_time_series[t] = self.antigen_time_series[t-1] + self.beta*self.antigen_time_series[t-1]*self.dt
+			N_t_active = np.sum(self.linages_time_series[(np.sum(self.activation_time_series, axis=1)!=0),:], axis = 0) - np.sum(self.linages_time_series[(np.sum(self.activation_time_series, axis=1)!=0),:], axis = 0)[0]
+			self.antigen_time_series[t] = self.antigen_time_series[t-1] + (self.beta*self.antigen_time_series[t-1] - self.gamma*self.antigen_time_series[t-1]*N_t_active[t-1])*self.dt
+			if(self.antigen_time_series[t]<(1)):
+				self.antigen_time_series[t] = 0
 
 			for i in range(self.n_linages):
 				self.linages_time_series[i,t] = self.linages_time_series[i,t-1] + self.nu*self.linages_time_series[i,t-1]*self.Sequences[i].active*self.dt
-				f = (self.antigen_time_series[t]/self.N_A)/((self.antigen_time_series[t]/self.N_A)+np.exp(self.Sequences[i].energy)) 
+				f = (self.antigen_time_series[t]/self.N_A)/((self.antigen_time_series[t]/self.N_A)+np.exp(self.energy_translation+self.Sequences[i].energy)) 
 				if(f > 0.5):
 					self.Sequences[i].active = 1
 					self.activation_time_series[i, t] = 1
@@ -113,6 +116,7 @@ class Deterministic_simulation():
 		ax.set_xlabel(r'Time $t$', fontsize = 20)
 		ax.set_ylabel(r'Antigen $\rho$ [M]', fontsize = 20)
 		ax.tick_params(labelsize = 20)
+		ax.set_ylim(np.exp(self.beta*self.initial_time)/self.N_A, (np.max(self.antigen_time_series)/self.N_A)*5)
 		#handles, labels = ax.get_legend_handles_labels()
 		#ax.legend(np.concatenate(([Line2D([0], [0], color='tab:red', linewidth=4, linestyle='solid', ms = 8)],handles)),np.concatenate(([r'$n_b(r, \rho)$'],labels)), loc = 0, fontsize = 20)
 
@@ -122,7 +126,7 @@ class Deterministic_simulation():
 		energies  = np.array([self.Sequences[i].energy for i in range(int(len(self.Sequences)))])
 		energies_array = np.linspace(np.min(energies),np.max(energies),100)
 		for i, rho in enumerate(rho_array): 
-			ax.plot(energies_array, (1/(1+np.exp(self.master_Sequence_energy + energies_array - np.log(rho)))), linewidth  = 4, color = colors[i], label = r'$\rho \approx 10^{%.0d}$'%(np.log10(rho)))
+			ax.plot(energies_array, (1/(1+np.exp(self.energy_translation + energies_array - np.log(rho)))), linewidth  = 4, color = colors[i], label = r'$\rho \approx 10^{%.0d}$'%(np.log10(rho)))
 		ax.set_yscale('log')
 		ax.set_xlabel(r'Energy $\epsilon$', fontsize = 20)
 		ax.set_ylabel(r'Probability of binding $p_b$', fontsize = 20)
@@ -171,18 +175,18 @@ class Deterministic_simulation():
 		ax.tick_params(labelsize = 20)
 		ax.legend(loc = 0, fontsize = 20)
 
-	def hist_sequences_energy(self, Sequences, bins, ax):
+	def hist_sequences_energy(self, Sequences, n_bins, ax):
 
 		rho_array = np.logspace(np.log10(1/self.N_A), np.log10(max(self.antigen_time_series)/self.N_A), 5)
 		colors = plt.cm.Reds(np.linspace(0,1,len(rho_array)))
 		energies = np.array([Sequences[i].energy for i in range(int(len(Sequences)))])
-		data_energies = ax.hist(energies, bins = bins, align = 'left', label = r'$S(\epsilon)$', color = 'lightsteelblue', alpha = 0.5)
+		data_energies = ax.hist(energies, bins = n_bins, align = 'left', label = r'$S(\epsilon)$', color = 'lightsteelblue', alpha = 0.5)
 
 		sub_energies = np.array([self.Sequences[i].energy for i in range(int(len(self.Sequences)))])
-		ax.hist(sub_energies , bins = np.linspace(np.min(sub_energies), np.max(sub_energies), bins), align = 'left', label = r'$US(\epsilon)$', color = 'indigo', alpha = 0.6)
+		ax.hist(sub_energies , bins = np.linspace(np.min(sub_energies), np.max(sub_energies), n_bins), align = 'left', label = r'$US(\epsilon)$', color = 'indigo', alpha = 0.6)
 
 		sub_energies_activated = np.array([self.Sequences[i].energy for i in range(int(len(self.Sequences))) if self.Sequences[i].active])
-		ax.hist(sub_energies_activated, bins = np.linspace(np.min(sub_energies), np.max(sub_energies), bins), align = 'left', label = r'Activated Linages', color = 'indianred', alpha = 0.8)
+		ax.hist(sub_energies_activated, bins = np.linspace(np.min(sub_energies), np.max(sub_energies), n_bins), align = 'left', label = r'Activated Linages', color = 'indianred', alpha = 0.8)
   
 		ax.set_yscale('log')
 		ax.set_xlabel(r'Energy $\epsilon$', fontsize = 20)
@@ -190,21 +194,19 @@ class Deterministic_simulation():
 		ax.tick_params(labelsize = 20)
 		ax.legend(loc = 0, fontsize = 20)
 
-	def hist_sequences_k_D(self, Sequences, bins, ax):
+	def hist_sequences_k_D(self, Sequences, n_bins, ax):
 
 		rho_array = np.logspace(np.log10(1/self.N_A), np.log10(max(self.antigen_time_series)/self.N_A), 5)
 		colors = plt.cm.Reds(np.linspace(0,1,len(rho_array)))
-		data_energies = ax.hist([np.exp(Sequences[i].energy) for i in range(int(len(Sequences)))], bins = bins, align = 'mid', label = r'$S(\epsilon)$', color = 'lightsteelblue', alpha = 0.5)
-		#ax.plot(data_energies[1][0:-1], sc.comb(9, data_energies[1][0:-1])*((20-1)**data_energies[1][0:-1]), linewidth = 4 , color = 'lightsteelblue', alpha = 0.6)
+		energies = np.array([Sequences[i].energy for i in range(int(len(Sequences)))])
+		data_energies = ax.hist(np.exp(energies), bins = np.logspace(np.log10(np.exp(np.min(energies))), np.log10(np.exp(np.max(energies))), n_bins), align = 'mid', label = r'$S(\epsilon)$', color = 'lightsteelblue', alpha = 0.5)
 
-		ax.hist([np.exp(self.Sequences[i].energy) for i in range(int(len(self.Sequences)))], bins = bins, align = 'mid', label = r'$US(\epsilon)$', color = 'indigo', alpha = 0.6)
-		#ax.plot(data_energies[1][0:-1], self.U*sc.comb(9, data_energies[1][0:-1])*((20-1)**data_energies[1][0:-1]), linewidth = 4 , color = 'indigo', alpha = 0.6)
+		sub_energies = np.array([self.Sequences[i].energy for i in range(int(len(self.Sequences)))])
+		ax.hist(np.exp(sub_energies), bins = np.logspace(np.log10(np.exp(np.min(sub_energies))), np.log10(np.exp(np.max(sub_energies))), n_bins), align = 'mid', label = r'$US(\epsilon)$', color = 'indigo', alpha = 0.6)
 
-		ax.hist([np.exp(self.Sequences[i].energy) for i in range(int(len(self.Sequences))) if self.Sequences[i].active], bins = bins, align = 'mid', label = r'Activated Linages', color = 'indianred', alpha = 0.8)
-		#for i, rho in enumerate(rho_array):
-		#	ax.plot(data_energies[1][0:-1], self.U*sc.comb(9, data_energies[1][0:-1].astype(int))*((20-1)**data_energies[1][0:-1])*(1/(1+np.exp(self.master_Sequence_energy + data_energies[1][0:-1] - np.log(rho)))) , color = colors[i], linestyle = 'dashed', linewidth = 3)
-
-		#ax.set_ylim(0.1, 2e5)    
+		sub_energies_activated = np.array([self.Sequences[i].energy for i in range(int(len(self.Sequences))) if self.Sequences[i].active])
+		ax.hist(np.exp(sub_energies_activated), bins = np.logspace(np.log10(np.exp(np.min(sub_energies))), np.log10(np.exp(np.max(sub_energies))), n_bins), align = 'mid', label = r'Activated Linages', color = 'indianred', alpha = 0.8)
+		
 		ax.set_yscale('log')
 		ax.set_xlabel(r'$k_D$', fontsize = 20)
 		ax.set_ylabel(r'Number of linages', fontsize = 20)
