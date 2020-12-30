@@ -1,6 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from Bio import Phylo
+#from Bio import Phylo
 from io import StringIO
 from matplotlib.lines import Line2D
 from datetime import datetime, timedelta
@@ -647,15 +647,14 @@ def generate_newick_format(filename):
 
 #----------------- Plots for ensemble averages -----------------
 
-def plot_activation_rate_ensemble_deterministic(beta, T, initial_time, to, dt, popt, energies, comment, gaussian, exponential, ax):
+def plot_activation_rate_ensemble_deterministic(beta, b, nu, gamma, T, initial_time, eo, dt, popt, energies, comment, gaussian, exponential, ax):
 
 	N_A = 6.02214076e23
-	b = 1.26
-	beta = 0.2
+	to = (eo+np.log(N_A))/beta
 	#____________ Read and plot the activation of linages as function of antigen concetration
 	t_new = np.linspace(initial_time, T, int((T-initial_time)/dt))
-	activation_time_series = pickle.load( open( "../Text_files/ensemble_deterministic_model_activation_time_series"+comment+".pkl", "rb" ) )
-	activation_time_series_var = pickle.load( open( "../Text_files/ensemble_deterministic_model_activation_time_series_var"+comment+".pkl", "rb" ) )
+	activation_time_series = pickle.load( open( "../../../../Dropbox/Research/Evolution_Immune_System//Text_files/ensemble_deterministic_model_activation_time_series_"+comment+".pkl", "rb" ) )
+	activation_time_series_var = pickle.load( open( "../../../../Dropbox/Research/Evolution_Immune_System//Text_files/ensemble_deterministic_model_activation_time_series_var_"+comment+".pkl", "rb" ) )
 	ax.plot(np.exp(beta*t_new[1:][::50][np.where(activation_time_series[1:][::50]!=0)])/N_A, activation_time_series[1:][::50][np.where(activation_time_series[1:][::50]!=0)], linestyle = '', marker = '.', ms = 20, linewidth = 4, color = 'indigo', label = 'simulation')
 	ax.fill_between(np.exp(beta*t_new[1:][::10][np.where(activation_time_series[1:][::10]!=0)])/N_A , activation_time_series[1:][::10][np.where(activation_time_series[1:][::10]!=0)] - np.sqrt(activation_time_series_var[1:][::10][np.where(activation_time_series[1:][::10]!=0)]), activation_time_series[1:][::10][np.where(activation_time_series[1:][::10]!=0)] + np.sqrt(activation_time_series_var[1:][::10][np.where(activation_time_series[1:][::10]!=0)]), linewidth = 4, color = 'indigo', alpha = 0.2)
 
@@ -666,8 +665,6 @@ def plot_activation_rate_ensemble_deterministic(beta, T, initial_time, to, dt, p
 
 	#____________ Plot the exponential integral
 	if(exponential):
-		b = 1.26
-		beta = 0.2
 		rho_new = np.linspace(5e-18, 1e-16, 100)
 		ax.plot(rho_new, (1/(b*beta))*(np.exp(-beta*b*to)*(rho_new*N_A)**(b)-1), linewidth = 4, linestyle = 'dashed', alpha = 0.4, label = 'exponential model')
 
@@ -680,18 +677,17 @@ def plot_activation_rate_ensemble_deterministic(beta, T, initial_time, to, dt, p
 	#ax.set_ylim(0.1, max(activation_time_series[1:]*1.5))
 	ax.legend(loc = 0, fontsize = 20)
 
-def plot_size_distribution_ensemble_deterministic(T, to, dt, n_bins, density, popt, comment, gaussian, exponential, ax):
+def plot_size_distribution_ensemble_deterministic(beta, b, nu, gamma, T, eo, dt, n_bins, density, popt, comment, gaussian, exponential, ax):
 
 	N_A = 6.02214076e23
-	b = 1.26
-	beta = 0.2
+	to = (eo+np.log(N_A))/beta
 	#____________ Read and plot the distribution of clone sizes
-	activated_linages_size = pickle.load( open( "../Text_files/ensemble_deterministic_model_linage_sizes"+comment+".pkl", "rb" ) )
+	activated_linages_size = pickle.load( open( "../../../../Dropbox/Research/Evolution_Immune_System/Text_files/ensemble_deterministic_model_linage_sizes_"+comment+".pkl", "rb" ) )
 	bins = np.logspace(0,np.log10(np.max(activated_linages_size)*2), n_bins)
 	data_activated_linages_log = np.histogram(activated_linages_size, bins = range(int(np.max(activated_linages_size))), density = True)
 	#data_activated_linages_lin = np.histogram(activated_linages_size, bins = np.linspace(1,np.max(activated_linages_size),20), density = False)
 	#Distribution
-	ax.plot(data_activated_linages_log[1][:-1][np.where(data_activated_linages_log[0]!=0)], 1-np.cumsum(data_activated_linages_log[0][np.where(data_activated_linages_log[0]!=0)]), marker = '.', ms = 20, linestyle = '', linewidth = 3, color = 'indigo', label = 'Simulation')
+	ax.plot(data_activated_linages_log[1][:-1][np.where(data_activated_linages_log[0]!=0)], 1-np.cumsum(data_activated_linages_log[0][np.where(data_activated_linages_log[0]!=0)]*data_activated_linages_log[1][:-1][np.where(data_activated_linages_log[0]!=0)]), marker = '.', ms = 20, linestyle = '', linewidth = 3, color = 'indigo', label = 'Simulation')
 	#ax.plot(data_activated_linages_lin[1][:-1][np.where(data_activated_linages_lin[0]!=0)], data_activated_linages_lin[0][np.where(data_activated_linages_lin[0]!=0)], marker = '.', ms = 20, linestyle = '-', linewidth = 3, color = 'tab:brown', label = 'linear')
 	n_array = np.linspace(1,np.max(activated_linages_size), 100)
 	#____________ Plot the gaussian integral
@@ -713,15 +709,14 @@ def plot_size_distribution_ensemble_deterministic(T, to, dt, n_bins, density, po
 	#ax.set_xlim(.9,1000)
 	ax.legend(loc = 0, fontsize = 20)
 
-def plot_N_total_ensemble_deterministic(T, initial_time, to, dt, popt, comment, gaussian, exponential, ax):
+def plot_N_total_ensemble_deterministic(beta, b, nu, gamma, T, initial_time, eo, dt, popt, comment, gaussian, exponential, ax):
 
 	N_A = 6.02214076e23
-	b = 1.26
-	beta = 0.2
+	to = (eo+np.log(N_A))/beta
 	t_new = np.linspace(initial_time, T, int((T-initial_time)/dt))
 
 	#____________ Read and plot the distribution of clone sizes
-	N_total_sim = pickle.load( open( "../Text_files/ensemble_deterministic_model_N_total"+comment+".pkl", "rb" ) )
+	N_total_sim = pickle.load( open( "../../../../Dropbox/Research/Evolution_Immune_System/Text_files/ensemble_deterministic_model_N_total_"+comment+".pkl", "rb" ) )
 
 	#Total linage size
 	ax.plot(t_new[::50], N_total_sim[::50], marker = '.', ms = 20, linestyle = '', linewidth = 3, color = 'indigo', label = 'Simulation')
@@ -745,15 +740,14 @@ def plot_N_total_ensemble_deterministic(T, initial_time, to, dt, popt, comment, 
 	#ax.set_xlim(T/2,T)
 	ax.legend(loc = 0, fontsize = 20)
 
-def plot_entropy_ensemble_deterministic(T, initial_time, to, dt, popt, comment, gaussian, exponential, ax):
+def plot_entropy_ensemble_deterministic(beta, b, nu, gamma, T, initial_time, eo, dt, popt, comment, gaussian, exponential, ax):
 
 	N_A = 6.02214076e23
-	b = 1.26
-	beta = 0.2
 
+	to = (eo+np.log(N_A))/beta
 	t_new = np.linspace(initial_time, T, int((T-initial_time)/dt))
 	#____________ Read and plot the distribution of clone sizes
-	entropy = pickle.load( open( "../Text_files/ensemble_deterministic_model_entropy"+comment+".pkl", "rb" ) )
+	entropy = pickle.load( open( "../../../../Dropbox/Research/Evolution_Immune_System/Text_files/ensemble_deterministic_model_entropy_"+comment+".pkl", "rb" ) )
 
 	#Total linage size
 	ax.plot(t_new[::50], entropy[::50], marker = '.', ms = 20, linestyle = '', linewidth = 3, color = 'indigo', label = 'Simulation')
@@ -803,9 +797,9 @@ def generate_Sequences(n_seq, Energy_Matrix):
 	sequences = np.array([master_sequence])
 	zero_date = datetime(2020, 1, 1)
 
-	file = open('../Text_files/file_parent_daughter2.txt', 'w+')
-	file_1 = open('../Text_files/timedNodeFile2.txt', 'w+')
-	file_2 = open('../Text_files/strainFile2.txt', 'w+')
+	file = open('../../../../Dropbox/Research/Evolution_Immune_System/Text_files/file_parent_daughter2.txt', 'w+')
+	file_1 = open('../../../../Dropbox/Research/Evolution_Immune_System/Text_files/timedNodeFile2.txt', 'w+')
+	file_2 = open('../../../../Dropbox/Research/Evolution_Immune_System/Text_files/strainFile2.txt', 'w+')
 	#np.savetxt(file_1, np.array(['Node', 'Parent', 'Time', 'SigClade']), fmt='%d')
 	#file.write("\n")
 	np.savetxt(file, np.array([str(Master_Sequence.id)+'\t', str(Master_Sequence.parent_id)]), fmt='%s', delimiter='', newline='', header = 'node\t parent\n', comments='')
@@ -839,9 +833,9 @@ def generate_Sequences(n_seq, Energy_Matrix):
 	        np.savetxt(file_2, np.array([str(Sequences[i].id)+'\t', 'A/Germany/'+str(i)+'/2020'+'\t', 'Germany'+'\t', 'EPI_ISL_'+str(i)+'\t', str(new_date.year)+'-'+str(new_date.month)+'-'+str(new_date.day)+'\t', '0']),fmt='%s', delimiter='', newline='')
 	        file_2.write("\n")
 
-	with open("../Text_files/energy.json", 'w') as of:
+	with open("../../../../Dropbox/Research/Evolution_Immune_System/Text_files/energy.json", 'w') as of:
 		json.dump(Energy, of, indent=True)
-	with open("../Text_files/hamming.json", 'w') as of:
+	with open("../../../../Dropbox/Research/Evolution_Immune_System/Text_files/hamming.json", 'w') as of:
 		json.dump(Hamming, of, indent=True)
 
 	file.close()
@@ -866,8 +860,8 @@ def run_ensemble_linage_size_distribution(Sequences, n_linages, n_seq, nu, beta,
 		activated_linages_size_t = []
 		final_antigen_concentration = []
 	else:
-		activated_linages_size_t = pickle.load( open( "../Text_files/activated_linages_size_t.pkl", "rb" ) )
-		final_antigen_concentration = pickle.load( open( "../Text_files/final_antigen_concentration.pkl", "rb" ) )
+		activated_linages_size_t = pickle.load( open( "../../../../Dropbox/Research/Evolution_Immune_System/Text_files/activated_linages_size_t.pkl", "rb" ) )
+		final_antigen_concentration = pickle.load( open( "../../../../Dropbox/Research/Evolution_Immune_System/Text_files/final_antigen_concentration.pkl", "rb" ) )
 	#_____________________________________________________________________
 
 	for i in range(n_sim):
@@ -879,30 +873,29 @@ def run_ensemble_linage_size_distribution(Sequences, n_linages, n_seq, nu, beta,
 		activated_linages_size_t = np.append(activated_linages_size_t, [Model.linages_time_series[i,-1] for i in range(n_linages) if Model.Sequences[i].active])
 		final_antigen_concentration = np.append(final_antigen_concentration, Model.antigen_time_series[-1])
 
-	pickle.dump(activated_linages_size_t, open( "../Text_files/activated_linages_size_t.pkl", "wb" ) )
-	pickle.dump(final_antigen_concentration, open( "../Text_files/final_antigen_concentration.pkl", "wb" ) )
+	pickle.dump(activated_linages_size_t, open( "../../../../Dropbox/Research/Evolution_Immune_System/Text_files/activated_linages_size_t.pkl", "wb" ) )
+	pickle.dump(final_antigen_concentration, open( "../../../../Dropbox/Research/Evolution_Immune_System/Text_files/final_antigen_concentration.pkl", "wb" ) )
 
 	print('Ensemble size:', len(activated_linages_size_t))
 
-def run_ensemble_deterministic_model(Sequences, n_linages, n_seq, nu, beta, T, master_Sequence_energy, initial_time, dt, n_sim, comment = "", new = False):
+def run_ensemble_deterministic_model(Sequences, n_linages, n_seq, nu, beta, gamma, T, energy_translation, initial_time, dt, n_sim, comment = "", new = False):
 
 	n_linages = n_linages
 	n_seq = n_seq
 	U = n_linages/n_seq
 	nu = nu
-	R=6
 	beta = beta
-	gamma = 1
+	gamma = gamma
 	T = T
 	initial_time = initial_time
 	dt = dt
-	master_Sequence_energy = master_Sequence_energy
+	energy_translation = energy_translation
 
 	#_____ Choose one of the following____________________________________
 	if(new):
 		activated_linages_size = np.array([])
 	else:
-		activated_linages_size = pickle.load( open( "../Text_files/ensemble_deterministic_model_linage_sizes"+comment+".pkl", "rb" ) )
+		activated_linages_size = pickle.load( open( "../../../../Dropbox/Research/Evolution_Immune_System/Text_files/ensemble_deterministic_model_linage_sizes_"+comment+".pkl", "rb" ) )
 	#_____________________________________________________________________
 
 	N_total = np.zeros(int((T-initial_time)/dt))
@@ -916,7 +909,7 @@ def run_ensemble_deterministic_model(Sequences, n_linages, n_seq, nu, beta, T, m
 		Sub_Sequences = np.random.choice(Sequences, n_linages)
 		for i in range(n_linages):
 			Sub_Sequences[i].active = False
-		Model = Deterministic_simulation(Sequences = Sub_Sequences, n_linages=n_linages, T = T, U = U, gamma = gamma, nu = nu, R = R, beta = beta, master_Sequence_energy = master_Sequence_energy, initial_time = initial_time, dt = dt)
+		Model = Deterministic_simulation(Sequences = Sub_Sequences, n_linages=n_linages, T = T, U = U, nu = nu, beta = beta, gamma = gamma, energy_translation = energy_translation, initial_time = initial_time, dt = dt)
 		Model.ODE()
 		# Add the linage sizes to the statistics
 		activated_linages_size = np.append(activated_linages_size, [Model.linages_time_series[i,-1] for i in range(n_linages) if Model.Sequences[i].active])
@@ -940,10 +933,10 @@ def run_ensemble_deterministic_model(Sequences, n_linages, n_seq, nu, beta, T, m
 	N_total = N_total/(n_sim)
 	entropy = entropy/(n_sim)
     
-	pickle.dump(activated_linages_size, open( "../Text_files/ensemble_deterministic_model_linage_sizes"+comment+".pkl", "wb" ) )
-	pickle.dump(activation_time_series, open( "../Text_files/ensemble_deterministic_model_activation_time_series"+comment+".pkl", "wb" ) )
-	pickle.dump(activation_time_series_var, open( "../Text_files/ensemble_deterministic_model_activation_time_series_var"+comment+".pkl", "wb" ) )
-	pickle.dump(N_total, open( "../Text_files/ensemble_deterministic_model_N_total"+comment+".pkl", "wb" ) )
-	pickle.dump(entropy, open( "../Text_files/ensemble_deterministic_model_entropy"+comment+".pkl", "wb" ) )
+	pickle.dump(activated_linages_size, open( "../../../../Dropbox/Research/Evolution_Immune_System/Text_files/ensemble_deterministic_model_linage_sizes_"+comment+".pkl", "wb" ) )
+	pickle.dump(activation_time_series, open( "../../../../Dropbox/Research/Evolution_Immune_System/Text_files/ensemble_deterministic_model_activation_time_series_"+comment+".pkl", "wb" ) )
+	pickle.dump(activation_time_series_var, open( "../../../../Dropbox/Research/Evolution_Immune_System/Text_files/ensemble_deterministic_model_activation_time_series_var_"+comment+".pkl", "wb" ) )
+	pickle.dump(N_total, open( "../../../../Dropbox/Research/Evolution_Immune_System/Text_files/ensemble_deterministic_model_N_total_"+comment+".pkl", "wb" ) )
+	pickle.dump(entropy, open( "../../../../Dropbox/Research/Evolution_Immune_System/Text_files/ensemble_deterministic_model_entropy_"+comment+".pkl", "wb" ) )
 
 	print('Ensemble size:', len(activated_linages_size))
