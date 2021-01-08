@@ -683,11 +683,10 @@ def plot_size_distribution_ensemble_deterministic(beta, b, nu, gamma, T, eo, dt,
 	to = (eo+np.log(N_A))/beta
 	#____________ Read and plot the distribution of clone sizes
 	activated_linages_size = pickle.load( open( "../../../../Dropbox/Research/Evolution_Immune_System/Text_files/ensemble_deterministic_model_linage_sizes_"+comment+".pkl", "rb" ) )
-	bins = np.logspace(0,np.log10(np.max(activated_linages_size)*2), n_bins)
-	data_activated_linages_log = np.histogram(activated_linages_size, bins = range(int(np.max(activated_linages_size))), density = True)
+	data_activated_linages_log = np.histogram(activated_linages_size, bins = range(1, int(np.max(activated_linages_size)), n_bins), density = False)
 	#data_activated_linages_lin = np.histogram(activated_linages_size, bins = np.linspace(1,np.max(activated_linages_size),20), density = False)
 	#Distribution
-	ax.plot(data_activated_linages_log[1][:-1][np.where(data_activated_linages_log[0]!=0)], 1-np.cumsum(data_activated_linages_log[0][np.where(data_activated_linages_log[0]!=0)]*data_activated_linages_log[1][:-1][np.where(data_activated_linages_log[0]!=0)]), marker = '.', ms = 20, linestyle = '', linewidth = 3, color = 'indigo', label = 'Simulation')
+	ax.plot(data_activated_linages_log[1][:-1][np.where(data_activated_linages_log[0]!=0)], 1-np.cumsum(data_activated_linages_log[0][np.where(data_activated_linages_log[0]!=0)]*n_bins), marker = '.', ms = 20, linestyle = '', linewidth = 3, color = 'indigo', label = 'Simulation')
 	#ax.plot(data_activated_linages_lin[1][:-1][np.where(data_activated_linages_lin[0]!=0)], data_activated_linages_lin[0][np.where(data_activated_linages_lin[0]!=0)], marker = '.', ms = 20, linestyle = '-', linewidth = 3, color = 'tab:brown', label = 'linear')
 	n_array = np.linspace(1,np.max(activated_linages_size), 100)
 	#____________ Plot the gaussian integral
