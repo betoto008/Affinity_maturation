@@ -94,19 +94,20 @@ class Deterministic_simulation():
 		self.time_series = np.linspace(self.initial_time, self.T, int((self.T-self.initial_time)/self.dt))
 
 	def ODE(self):
-
+		#ANTIGEN
 		self.antigen_time_series[0] = np.exp(self.beta*self.initial_time)
 		for t in range(1,int((self.T-self.initial_time)/self.dt)):
 			N_t_active = np.sum(self.linages_time_series[(np.sum(self.activation_time_series, axis=1)!=0),:], axis = 0) - np.sum(self.linages_time_series[(np.sum(self.activation_time_series, axis=1)!=0),:], axis = 0)[0]
 			self.antigen_time_series[t] = self.antigen_time_series[t-1] + (self.beta*self.antigen_time_series[t-1] - self.gamma*self.antigen_time_series[t-1]*N_t_active[t-1])*self.dt
 			if(self.antigen_time_series[t]<(1)):
 				self.antigen_time_series[t] = 0
-
+			#BCELL LINAGES 
 			for i in range(self.n_linages):
 				self.linages_time_series[i,t] = self.linages_time_series[i,t-1] + self.nu*self.linages_time_series[i,t-1]*self.Sequences[i].active*self.dt
 				f = (self.antigen_time_series[t]/self.N_A)/((self.antigen_time_series[t]/self.N_A)+np.exp(self.energy_translation+self.Sequences[i].energy)) 
 				if(f > 0.5):
 					self.Sequences[i].active = 1
+				if(self.Sequences[i].active == 1):
 					self.activation_time_series[i, t] = 1
 
 	def plot_antigen_time(self, ax):
@@ -180,13 +181,13 @@ class Deterministic_simulation():
 		rho_array = np.logspace(np.log10(1/self.N_A), np.log10(max(self.antigen_time_series)/self.N_A), 5)
 		colors = plt.cm.Reds(np.linspace(0,1,len(rho_array)))
 		energies = np.array([Sequences[i].energy for i in range(int(len(Sequences)))])
-		data_energies = ax.hist(energies, bins = n_bins, align = 'left', label = r'$S(\epsilon)$', color = 'lightsteelblue', alpha = 0.5)
+		data_energies = ax.hist(energies, bins = np.linspace(np.min(energies), np.max(energies), n_bins), align = 'left', label = r'$S(\epsilon)$', color = 'lightsteelblue', alpha = 0.5)
 
 		sub_energies = np.array([self.Sequences[i].energy for i in range(int(len(self.Sequences)))])
-		ax.hist(sub_energies , bins = np.linspace(np.min(sub_energies), np.max(sub_energies), n_bins), align = 'left', label = r'$US(\epsilon)$', color = 'indigo', alpha = 0.6)
+		ax.hist(sub_energies , bins = np.linspace(np.min(energies), np.max(energies), n_bins), align = 'left', label = r'$US(\epsilon)$', color = 'indigo', alpha = 0.6)
 
 		sub_energies_activated = np.array([self.Sequences[i].energy for i in range(int(len(self.Sequences))) if self.Sequences[i].active])
-		ax.hist(sub_energies_activated, bins = np.linspace(np.min(sub_energies), np.max(sub_energies), n_bins), align = 'left', label = r'Activated Linages', color = 'indianred', alpha = 0.8)
+		ax.hist(sub_energies_activated, bins = np.linspace(np.min(energies), np.max(energies), n_bins), align = 'left', label = r'Activated Linages', color = 'indianred', alpha = 0.8)
   
 		ax.set_yscale('log')
 		ax.set_xlabel(r'Energy $\epsilon$', fontsize = 20)
@@ -202,10 +203,10 @@ class Deterministic_simulation():
 		data_energies = ax.hist(np.exp(energies), bins = np.logspace(np.log10(np.exp(np.min(energies))), np.log10(np.exp(np.max(energies))), n_bins), align = 'mid', label = r'$S(\epsilon)$', color = 'lightsteelblue', alpha = 0.5)
 
 		sub_energies = np.array([self.Sequences[i].energy for i in range(int(len(self.Sequences)))])
-		ax.hist(np.exp(sub_energies), bins = np.logspace(np.log10(np.exp(np.min(sub_energies))), np.log10(np.exp(np.max(sub_energies))), n_bins), align = 'mid', label = r'$US(\epsilon)$', color = 'indigo', alpha = 0.6)
+		ax.hist(np.exp(sub_energies), bins = np.logspace(np.log10(np.exp(np.min(energies))), np.log10(np.exp(np.max(energies))), n_bins), align = 'mid', label = r'$US(\epsilon)$', color = 'indigo', alpha = 0.6)
 
 		sub_energies_activated = np.array([self.Sequences[i].energy for i in range(int(len(self.Sequences))) if self.Sequences[i].active])
-		ax.hist(np.exp(sub_energies_activated), bins = np.logspace(np.log10(np.exp(np.min(sub_energies))), np.log10(np.exp(np.max(sub_energies))), n_bins), align = 'mid', label = r'Activated Linages', color = 'indianred', alpha = 0.8)
+		ax.hist(np.exp(sub_energies_activated), bins = np.logspace(np.log10(np.exp(np.min(energies))), np.log10(np.exp(np.max(energies))), n_bins), align = 'mid', label = r'Activated Linages', color = 'indianred', alpha = 0.8)
 		
 		ax.set_yscale('log')
 		ax.set_xlabel(r'$k_D$', fontsize = 20)
@@ -599,7 +600,7 @@ def plot_histogram_energy_subsampling(bins, n_linages, Sequences, sub_energies, 
 	energies, data_energies = plot_histogram_energy(Sequences = Sequences, bins = bins, ax = ax)
 
 	#____________ fit and plot gaussian function
-	popt, pcov = curve_fit(my_quadratic_func, data_energies[1][0:-1], np.log(data_energies[0]) , p0 = (5e5/np.sqrt(np.pi), -0.04, -30))
+	popt, pcov = curve_fit(my_quadratic_func, data_energies[1][0:-1][data_energies[0]!=0], np.log(data_energies[0][data_energies[0]!=0]) , p0 = (5e5/np.sqrt(np.pi), -0.04, -30))
 	print(r'integral a*$\pi$:',popt[0]*np.pi)
 	r_array = np.linspace(np.min(energies)-5, np.max(energies)+5, 1000)
 	ax.plot(r_array, np.exp(my_quadratic_func(r_array, *popt)), linestyle = '--', linewidth = 4, color = 'steelblue', alpha = 0.4)
@@ -607,10 +608,10 @@ def plot_histogram_energy_subsampling(bins, n_linages, Sequences, sub_energies, 
 
 
 	#____________ Plot histogram of sub_energies
-	data_energies = np.histogram(sub_energies, bins=bins, density = False)
-	ax.plot(data_energies[1][0:-1], data_energies[0]/(1000), linewidth = 4, color = 'indigo', label = 'After samplig', linestyle = '', marker = 'o')
+	data_energies = np.histogram(sub_energies, bins=20, density = False)
+	ax.plot(data_energies[1][0:-1], data_energies[0]/(2000), linewidth = 4, color = 'indigo', label = 'After samplig', linestyle = '', marker = 'o')
 	ax.plot(r_array, (2e2/5e5)*np.exp(my_quadratic_func(r_array, *popt)), linestyle = '--', linewidth = 4, color = 'indigo', alpha = 0.4)
-	ax.plot(r_array, (2e2/5e5)*popt[0]*np.sqrt(-popt[1])*(1+popt[1]*(r_array-popt[2])**2), label = 'model 2')
+	ax.plot(r_array, (2e2/5e5)*popt[0]*np.sqrt(-popt[1])*(1+popt[1]*(r_array-popt[2])**2) )
 	ax.set_ylim(1,8e4)
 	handles, labels = ax.get_legend_handles_labels()
 	ax.legend(np.concatenate(([],handles)),np.concatenate(([],labels)), loc = 2, fontsize = 20)
@@ -647,7 +648,7 @@ def generate_newick_format(filename):
 
 #----------------- Plots for ensemble averages -----------------
 
-def plot_activation_rate_ensemble_deterministic(beta, b, nu, gamma, T, initial_time, eo, dt, popt, energies, comment, gaussian, exponential, ax):
+def plot_activation_rate_ensemble_deterministic(beta, b, nu, gamma, T, initial_time, eo, n_linages, n_left_tail, rho_min, rho_max, dt, popt, energies, comment, gaussian, exponential, ax):
 
 	N_A = 6.02214076e23
 	to = (eo+np.log(N_A))/beta
@@ -655,18 +656,19 @@ def plot_activation_rate_ensemble_deterministic(beta, b, nu, gamma, T, initial_t
 	t_new = np.linspace(initial_time, T, int((T-initial_time)/dt))
 	activation_time_series = pickle.load( open( "../../../../Dropbox/Research/Evolution_Immune_System//Text_files/ensemble_deterministic_model_activation_time_series_"+comment+".pkl", "rb" ) )
 	activation_time_series_var = pickle.load( open( "../../../../Dropbox/Research/Evolution_Immune_System//Text_files/ensemble_deterministic_model_activation_time_series_var_"+comment+".pkl", "rb" ) )
-	ax.plot(np.exp(beta*t_new[1:][::50][np.where(activation_time_series[1:][::50]!=0)])/N_A, activation_time_series[1:][::50][np.where(activation_time_series[1:][::50]!=0)], linestyle = '', marker = '.', ms = 20, linewidth = 4, color = 'indigo', label = 'simulation')
+	ax.plot(np.exp(beta*t_new[1:][::50][np.where(activation_time_series[1:][::50]!=0)])/N_A, activation_time_series[1:][::50][np.where(activation_time_series[1:][::50]!=0)], linestyle = '', marker = '.', ms = 15, linewidth = 4, color = 'indigo', label = 'simulation')
 	ax.fill_between(np.exp(beta*t_new[1:][::10][np.where(activation_time_series[1:][::10]!=0)])/N_A , activation_time_series[1:][::10][np.where(activation_time_series[1:][::10]!=0)] - np.sqrt(activation_time_series_var[1:][::10][np.where(activation_time_series[1:][::10]!=0)]), activation_time_series[1:][::10][np.where(activation_time_series[1:][::10]!=0)] + np.sqrt(activation_time_series_var[1:][::10][np.where(activation_time_series[1:][::10]!=0)]), linewidth = 4, color = 'indigo', alpha = 0.2)
 
 	#____________ Plot the gaussian integral
 	if(gaussian):
 		r_array = np.linspace(np.min(energies), np.max(np.log(np.exp(t_new[1:][::10][np.where(activation_time_series[1:][::10]!=0)])/N_A)), 5000)
-		ax.plot(np.exp(r_array), np.cumsum((2e2/5e5)*np.exp(my_quadratic_func(r_array, *popt))*(np.max(energies)-np.min(energies))/5000), linestyle = '--', ms = 20, linewidth = 4, color = 'violet', label = 'Gaussian integral')
+		ax.plot(np.exp(r_array), np.cumsum((2e2/5e5)*np.exp(my_quadratic_func(r_array, *popt))*(np.max(energies)-np.min(energies))/5000), linestyle = '--', ms = 15, linewidth = 4, color = 'violet', label = 'Gaussian integral')
 
 	#____________ Plot the exponential integral
 	if(exponential):
-		rho_new = np.linspace(5e-18, 1e-16, 100)
-		ax.plot(rho_new, (1/(b*beta))*(np.exp(-beta*b*to)*(rho_new*N_A)**(b)-1), linewidth = 4, linestyle = 'dashed', alpha = 0.4, label = 'exponential model')
+		rho_new = np.logspace(np.log10(rho_min), np.log10(rho_max), 50)
+		alpha = n_linages/n_left_tail
+		ax.plot(rho_new, (alpha/(b*beta))*(np.exp(-beta*b*to)*(rho_new*N_A)**(b)-1), linewidth = 4, linestyle = 'dashed', alpha = 0.4, label = 'exponential model', color = 'indigo')
 
 
 	ax.set_xlabel(r'Antigen concentration $[M]$', fontsize = 20)
@@ -681,24 +683,23 @@ def plot_size_distribution_ensemble_deterministic(beta, b, nu, gamma, T, eo, dt,
 
 	N_A = 6.02214076e23
 	to = (eo+np.log(N_A))/beta
+
 	#____________ Read and plot the distribution of clone sizes
 	activated_linages_size = pickle.load( open( "../../../../Dropbox/Research/Evolution_Immune_System/Text_files/ensemble_deterministic_model_linage_sizes_"+comment+".pkl", "rb" ) )
-	data_activated_linages_log = np.histogram(activated_linages_size, bins = range(1, int(np.max(activated_linages_size)), n_bins), density = False)
-	#data_activated_linages_lin = np.histogram(activated_linages_size, bins = np.linspace(1,np.max(activated_linages_size),20), density = False)
+	bins = np.logspace(0, np.log10(np.max(activated_linages_size)), n_bins)
+	data_activated_linages_log = np.histogram(activated_linages_size, bins = bins, density = True)
+	
 	#Distribution
-	ax.plot(data_activated_linages_log[1][:-1][np.where(data_activated_linages_log[0]!=0)], 1-np.cumsum(data_activated_linages_log[0][np.where(data_activated_linages_log[0]!=0)]*n_bins), marker = '.', ms = 20, linestyle = '', linewidth = 3, color = 'indigo', label = 'Simulation')
-	#ax.plot(data_activated_linages_lin[1][:-1][np.where(data_activated_linages_lin[0]!=0)], data_activated_linages_lin[0][np.where(data_activated_linages_lin[0]!=0)], marker = '.', ms = 20, linestyle = '-', linewidth = 3, color = 'tab:brown', label = 'linear')
-	n_array = np.linspace(1,np.max(activated_linages_size), 100)
+	ax.plot(data_activated_linages_log[1][:-1], 1 - np.cumsum(data_activated_linages_log[0]*np.diff(data_activated_linages_log[1])), marker = '.', ms = 15, linestyle = '', linewidth = 3, color = 'indigo', label = 'Simulation')
+	
+	n_array = np.logspace(0,np.log10(np.max(activated_linages_size)), 50)
 	#____________ Plot the gaussian integral
 	if(gaussian):
 		ax.plot(n_array, 1-((len(activated_linages_size)/2e2)*(2e2/5e5)*np.exp(my_quadratic_func(np.log((np.exp(T)/N_A)/(n_array)), *popt))), linestyle = '--', ms = 20, linewidth = 4, color = 'violet', label = 'Gaussian model')
 
 	#____________ Plot the exponential integral
 	if(exponential):
-		ax.plot(n_array, ((1/(beta*b))*(np.exp(beta*b*(T-to))*n_array**(-b*beta)-1))/((((1/(beta*b))*(np.exp(beta*b*(T-to))*n_array**(-b*beta)-1)))[0]), linewidth = 4, linestyle = 'dashed', alpha = 0.4, label = 'exponential model')
-
-
-
+		ax.plot(n_array, ((1/(beta*b))*(np.exp(beta*b*(T-to))*n_array**(-(b*beta)/nu)-1))/((((1/(beta*b))*(np.exp(beta*b*(T-to))*n_array**(-b*beta)-1)))[0]), linewidth = 4, linestyle = 'dashed', alpha = 0.4, label = 'exponential model', color = 'indigo')
 
 	ax.set_xlabel(r'Clone size $n_i$', fontsize = 20)
 	ax.set_ylabel(r'counts', fontsize = 20)
@@ -708,7 +709,7 @@ def plot_size_distribution_ensemble_deterministic(beta, b, nu, gamma, T, eo, dt,
 	#ax.set_xlim(.9,1000)
 	ax.legend(loc = 0, fontsize = 20)
 
-def plot_N_total_ensemble_deterministic(beta, b, nu, gamma, T, initial_time, eo, dt, popt, comment, gaussian, exponential, ax):
+def plot_N_total_ensemble_deterministic(beta, b, nu, gamma, T, initial_time, eo, n_linages, n_left_tail, dt, popt, comment, gaussian, exponential, ax):
 
 	N_A = 6.02214076e23
 	to = (eo+np.log(N_A))/beta
@@ -728,8 +729,9 @@ def plot_N_total_ensemble_deterministic(beta, b, nu, gamma, T, initial_time, eo,
 	#____________ Plot the exponential integral
 	if(exponential):
 		tau = np.exp(t_new-to)
-		N_total_exp = ((tau**(beta*b)-tau)/(beta*b-1)) + 200 - (1/(beta*b))*(tau**(beta*b)*-1)
-		ax.plot(t_new, N_total_exp, linewidth = 4, linestyle = 'dashed', alpha = 0.4, label = 'exponential model')
+		alpha = n_linages/n_left_tail
+		N_total_exp = alpha*((tau**(beta*b)-tau**(nu))/(beta*b-nu)) + n_linages - (alpha/(beta*b))*(tau**(beta*b)-1)
+		ax.plot(t_new, N_total_exp, linewidth = 4, linestyle = 'dashed', alpha = 0.4, label = 'exponential model', color = 'indigo')
 
 	ax.set_xlabel(r'Time $t$', fontsize = 20)
 	ax.set_ylabel(r'size $N_{total}$', fontsize = 20)
@@ -739,7 +741,7 @@ def plot_N_total_ensemble_deterministic(beta, b, nu, gamma, T, initial_time, eo,
 	#ax.set_xlim(T/2,T)
 	ax.legend(loc = 0, fontsize = 20)
 
-def plot_entropy_ensemble_deterministic(beta, b, nu, gamma, T, initial_time, eo, dt, popt, comment, gaussian, exponential, ax):
+def plot_entropy_ensemble_deterministic(beta, b, nu, gamma, T, initial_time, eo, n_linages, n_left_tail, dt, popt, comment, gaussian, exponential, ax):
 
 	N_A = 6.02214076e23
 
@@ -760,9 +762,10 @@ def plot_entropy_ensemble_deterministic(beta, b, nu, gamma, T, initial_time, eo,
 	#____________ Plot the exponential integral
 	if(exponential):
 		tau = np.exp(t_new-to)
-		N_total_exp = ((tau**(beta*b)-tau)/(beta*b-1)) + 200 - (1/(beta*b))*(tau**(beta*b)*-1)
-		Entropy_exp = (1/(N_total_exp*(beta*b-1))) * (tau*np.log(tau)  - ((tau**(beta*b)-tau)/(beta*b-1))) + ((np.log(N_total_exp)*1)/(1))
-		ax.plot(t_new, Entropy_exp, linewidth = 4, linestyle = 'dashed', alpha = 0.4, label = 'exponential model')
+		alpha = n_linages/n_left_tail
+		N_total_exp = alpha*((tau**(beta*b)-tau**(nu))/(beta*b-nu)) + n_linages - (alpha/(beta*b))*(tau**(beta*b)-1)
+		Entropy_exp = ((nu*alpha)/(N_total_exp*(beta*b-nu))) * (tau**(nu)*np.log(tau)  - ((tau**(beta*b)-tau**(nu))/(beta*b-nu))) + ((np.log(N_total_exp)*1)/(1))
+		ax.plot(t_new, Entropy_exp, linewidth = 4, linestyle = 'dashed', alpha = 0.4, label = 'exponential model', color = 'indigo')
 		ax.hlines(1/(1-beta*b), initial_time, T, linewidth = 4, linestyle = 'dashed', alpha = 0.4, label = r'$S_{\infty}$')
 
 	ax.set_xlabel(r'Time $t$', fontsize = 20)
@@ -893,14 +896,19 @@ def run_ensemble_deterministic_model(Sequences, n_linages, n_seq, nu, beta, gamm
 	#_____ Choose one of the following____________________________________
 	if(new):
 		activated_linages_size = np.array([])
+		m_bar = np.array([])
+		activated_energies = np.array([])
 	else:
 		activated_linages_size = pickle.load( open( "../../../../Dropbox/Research/Evolution_Immune_System/Text_files/ensemble_deterministic_model_linage_sizes_"+comment+".pkl", "rb" ) )
+		m_bar = pickle.load( open("../../../../Dropbox/Research/Evolution_Immune_System/Text_files/ensemble_deterministic_model_m_bar_"+comment+".pkl", "rb" ) )
+		activated_energies = pickle.load( open("../../../../Dropbox/Research/Evolution_Immune_System/Text_files/ensemble_deterministic_model_activated_energies_"+comment+".pkl", "rb" ) )
 	#_____________________________________________________________________
 
 	N_total = np.zeros(int((T-initial_time)/dt))
 	activation_time_series = np.zeros(int((T-initial_time)/dt))
 	activation_time_series_2 = np.zeros(int((T-initial_time)/dt))
 	entropy = np.zeros(int((T-initial_time)/dt))
+
 
 	for i in range(n_sim):
 		if(i%int((n_sim/5))==0):
@@ -912,6 +920,8 @@ def run_ensemble_deterministic_model(Sequences, n_linages, n_seq, nu, beta, gamm
 		Model.ODE()
 		# Add the linage sizes to the statistics
 		activated_linages_size = np.append(activated_linages_size, [Model.linages_time_series[i,-1] for i in range(n_linages) if Model.Sequences[i].active])
+		# Add m_bar to the statistics
+		m_bar = np.append(m_bar, np.sum(Model.activation_time_series, axis = 0)[-1])
 		# Sum up total population size
 		N_total_i = np.sum(Model.linages_time_series, axis=0)
 		# Calculate linage frequencies and entropy
@@ -919,7 +929,9 @@ def run_ensemble_deterministic_model(Sequences, n_linages, n_seq, nu, beta, gamm
 		entropy_i = np.array([np.sum(-1*linage_freqs[:,t]*np.log(linage_freqs[:,t])) for t in range(int(len(Model.time_series)))])
 		# Sum up columns in array Model.activation_time_series for the activated linages
 		activation_time_series_i = np.array([np.sum(Model.activation_time_series[:,i]) for i in range(int(len(Model.activation_time_series[0,:])))])
-		# Sum the last array to the main arrays
+		# Add the energies of the activated linages
+		activated_energies = np.append(activated_energies, [i.energy for i in Model.Sequences[np.where(np.sum(Model.activation_time_series, axis=1)!=0)]])
+		# Sum the last arrays to the main arrays
 		activation_time_series = activation_time_series + activation_time_series_i
 		activation_time_series_2 = activation_time_series_2 + (activation_time_series_i)**2
 		N_total = N_total + N_total_i
@@ -937,5 +949,8 @@ def run_ensemble_deterministic_model(Sequences, n_linages, n_seq, nu, beta, gamm
 	pickle.dump(activation_time_series_var, open( "../../../../Dropbox/Research/Evolution_Immune_System/Text_files/ensemble_deterministic_model_activation_time_series_var_"+comment+".pkl", "wb" ) )
 	pickle.dump(N_total, open( "../../../../Dropbox/Research/Evolution_Immune_System/Text_files/ensemble_deterministic_model_N_total_"+comment+".pkl", "wb" ) )
 	pickle.dump(entropy, open( "../../../../Dropbox/Research/Evolution_Immune_System/Text_files/ensemble_deterministic_model_entropy_"+comment+".pkl", "wb" ) )
+	pickle.dump(m_bar, open( "../../../../Dropbox/Research/Evolution_Immune_System/Text_files/ensemble_deterministic_model_m_bar_"+comment+".pkl", "wb" ) )
+	pickle.dump(activated_energies, open( "../../../../Dropbox/Research/Evolution_Immune_System/Text_files/ensemble_deterministic_model_activated_energies_"+comment+".pkl", "wb" ) )
+
 
 	print('Ensemble size:', len(activated_linages_size))
