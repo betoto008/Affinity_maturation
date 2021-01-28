@@ -110,9 +110,9 @@ class Deterministic_simulation():
 				if(self.Sequences[i].active == 1):
 					self.activation_time_series[i, t] = 1
 
-	def plot_antigen_time(self, ax):
+	def plot_antigen_time(self, color, ax):
 
-		ax.plot(self.time_series, self.antigen_time_series/self.N_A, linewidth  = 4)
+		ax.plot(self.time_series, self.antigen_time_series/self.N_A, linewidth  = 4, color = color)
 		ax.set_yscale('log')
 		ax.set_xlabel(r'Time $t$', fontsize = 20)
 		ax.set_ylabel(r'Antigen $\rho$ [M]', fontsize = 20)
@@ -122,7 +122,7 @@ class Deterministic_simulation():
 		#ax.legend(np.concatenate(([Line2D([0], [0], color='tab:red', linewidth=4, linestyle='solid', ms = 8)],handles)),np.concatenate(([r'$n_b(r, \rho)$'],labels)), loc = 0, fontsize = 20)
 
 	def plot_prob_binding(self, ax):
-		rho_array = np.logspace(int(np.log10(max(self.antigen_time_series)/self.N_A)) - 4, np.log10(max(self.antigen_time_series)/self.N_A)  + 2, 5)
+		rho_array = np.logspace(int(np.log10(max(self.antigen_time_series)/self.N_A)) - 4, np.log10(max(self.antigen_time_series)/self.N_A), 5)
 		colors = plt.cm.Reds(np.linspace(0,1,len(rho_array)))
 		energies  = np.array([self.Sequences[i].energy for i in range(int(len(self.Sequences)))])
 		energies_array = np.linspace(np.min(energies),np.max(energies),100)
@@ -138,7 +138,7 @@ class Deterministic_simulation():
 		colors = []
 		for i in self.Sequences:
 			if(i.active==True):
-				colors.append('tab:red')
+				colors.append('indianred')
 			else:
 				colors.append('indigo')
 		if(time):
@@ -159,7 +159,7 @@ class Deterministic_simulation():
 
 		rho_array = np.logspace(np.log10(1/self.N_A), np.log10(max(self.antigen_time_series)/self.N_A), 5)
 		colors = plt.cm.Reds(np.linspace(0,1,len(rho_array)))
-		data_distances = ax.hist([Sequences[i].hamming_distance for i in range(int(len(Sequences)))], bins = range(10), align = 'left', label = r'$S(d)$', color = 'lightsteelblue', alpha = 0.5)
+		data_distances = ax.hist([Sequences[i].hamming_distance for i in range(int(len(Sequences)))], bins = range(10), align = 'left', label = r'$S(d)$', color = 'olive', alpha = 0.4)
 		#ax.plot(data_distances[1][0:-1], sc.comb(9, data_distances[1][0:-1])*((20-1)**data_distances[1][0:-1]), linewidth = 4 , color = 'lightsteelblue', alpha = 0.6)
 
 		ax.hist([self.Sequences[i].hamming_distance for i in range(int(len(self.Sequences)))], bins = range(10), align = 'left', label = r'$US(d)$', color = 'indigo', alpha = 0.6)
@@ -200,7 +200,7 @@ class Deterministic_simulation():
 		rho_array = np.logspace(np.log10(1/self.N_A), np.log10(max(self.antigen_time_series)/self.N_A), 5)
 		colors = plt.cm.Reds(np.linspace(0,1,len(rho_array)))
 		energies = np.array([Sequences[i].energy for i in range(int(len(Sequences)))])
-		data_energies = ax.hist(np.exp(energies), bins = np.logspace(np.log10(np.exp(np.min(energies))), np.log10(np.exp(np.max(energies))), n_bins), align = 'mid', label = r'$S(\epsilon)$', color = 'lightsteelblue', alpha = 0.5)
+		data_energies = ax.hist(np.exp(energies), bins = np.logspace(np.log10(np.exp(np.min(energies))), np.log10(np.exp(np.max(energies))), n_bins), align = 'mid', label = r'$S(\epsilon)$', color = 'olive', alpha = 0.5)
 
 		sub_energies = np.array([self.Sequences[i].energy for i in range(int(len(self.Sequences)))])
 		ax.hist(np.exp(sub_energies), bins = np.logspace(np.log10(np.exp(np.min(energies))), np.log10(np.exp(np.max(energies))), n_bins), align = 'mid', label = r'$US(\epsilon)$', color = 'indigo', alpha = 0.6)
@@ -568,12 +568,12 @@ def plot_histogram_hamming_distance(Sequences, ax):
 
 	return distances
 
-def plot_histogram_energy(Sequences, bins, ax):
+def plot_histogram_energy(Sequences, normalization, bins, color, ax):
 
 	energies = np.array([i.energy for i in Sequences])
 	data_energies = np.histogram(energies, bins=bins)
 
-	ax.plot(data_energies[1][0:-1], data_energies[0], linewidth = 4, color = 'steelblue', label = 'Data', linestyle = '', marker = 'o')
+	ax.plot(data_energies[1][0:-1], data_energies[0]/normalization, linewidth = 4, color = color, label = 'Data', linestyle = '', marker = 'o')
 	ax.set_yscale('log')
 	#ax.set_ylim(1,1e10)
 	ax.set_xlabel(r'Energy $r$', fontsize = 20)
