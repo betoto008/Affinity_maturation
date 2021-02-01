@@ -13,7 +13,15 @@ from matplotlib import style
 from scipy.interpolate import interp1d
 
 M2 = np.loadtxt('../../../../Dropbox/Research/Evolution_Immune_System/Text_files/MJ2.txt', skiprows= 1, usecols=range(1,21)).tolist()
+Alphabet = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't']
+L = int(input('What is the length of the sequences? '))
 
-n_seq = input('How many sequences do you want to create? ')
-Sequences = generate_Sequences(int(n_seq), Energy_Matrix = M2)
-pickle.dump( Sequences, open( "../../../../Dropbox/Research/Evolution_Immune_System/Text_files/Sequences_MJ2-n_seq-%d.pkl"%(int(n_seq)), "wb" ) )
+antigen_sequence = "".join(np.random.choice(Alphabet, L))
+
+#n_seq = input('How many sequences do you want to create? ')
+
+n_seqs = np.array([1e2, 1e3, 1e4, 1e5])
+
+for n_seq in n_seqs:
+	Sequences = generate_Sequences(int(n_seq), Energy_Matrix = M2, antigen_sequence = antigen_sequence, L = L, new_antigen = False)
+	pickle.dump( Sequences, open( "../../../../Dropbox/Research/Evolution_Immune_System/Text_files/Sequences_MJ2_L-%d_n_seq-%d.pkl"%(int(L), int(n_seq)), "wb" ) )

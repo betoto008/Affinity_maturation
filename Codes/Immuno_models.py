@@ -65,7 +65,6 @@ class Sequence():
 		self.Alphabet = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't']
 		self.calculate_delta_energy(Energy_Matrix = Energy_Matrix, old_letter = old_letter, new_letter = new_letter)
 	
-		#Ask Michael about the best way to produce the energy
 
 #----------------- Models -----------------
 
@@ -122,7 +121,7 @@ class Deterministic_simulation():
 		#ax.legend(np.concatenate(([Line2D([0], [0], color='tab:red', linewidth=4, linestyle='solid', ms = 8)],handles)),np.concatenate(([r'$n_b(r, \rho)$'],labels)), loc = 0, fontsize = 20)
 
 	def plot_prob_binding(self, ax):
-		rho_array = np.logspace(int(np.log10(max(self.antigen_time_series)/self.N_A)) - 4, np.log10(max(self.antigen_time_series)/self.N_A), 5)
+		rho_array = np.logspace(int(np.log10(max(self.antigen_time_series)/self.N_A)) - 4, np.log10(max(self.antigen_time_series)/self.N_A)	, 5)
 		colors = plt.cm.Reds(np.linspace(0,1,len(rho_array)))
 		energies  = np.array([self.Sequences[i].energy for i in range(int(len(self.Sequences)))])
 		energies_array = np.linspace(np.min(energies),np.max(energies),100)
@@ -200,7 +199,7 @@ class Deterministic_simulation():
 		rho_array = np.logspace(np.log10(1/self.N_A), np.log10(max(self.antigen_time_series)/self.N_A), 5)
 		colors = plt.cm.Reds(np.linspace(0,1,len(rho_array)))
 		energies = np.array([Sequences[i].energy for i in range(int(len(Sequences)))])
-		data_energies = ax.hist(np.exp(energies), bins = np.logspace(np.log10(np.exp(np.min(energies))), np.log10(np.exp(np.max(energies))), n_bins), align = 'mid', label = r'$S(\epsilon)$', color = 'olive', alpha = 0.5)
+		data_energies = ax.hist(np.exp(energies), bins = np.logspace(np.log10(np.exp(np.min(energies))), np.log10(np.exp(np.max(energies))), n_bins), align = 'mid', label = r'$S(\epsilon)$', color = 'olivedrab', alpha = 0.5)
 
 		sub_energies = np.array([self.Sequences[i].energy for i in range(int(len(self.Sequences)))])
 		ax.hist(np.exp(sub_energies), bins = np.logspace(np.log10(np.exp(np.min(energies))), np.log10(np.exp(np.max(energies))), n_bins), align = 'mid', label = r'$US(\epsilon)$', color = 'indigo', alpha = 0.6)
@@ -568,10 +567,10 @@ def plot_histogram_hamming_distance(Sequences, ax):
 
 	return distances
 
-def plot_histogram_energy(Sequences, normalization, bins, color, ax):
+def plot_histogram_energy(Sequences, normalization, bins, color, density, ax):
 
 	energies = np.array([i.energy for i in Sequences])
-	data_energies = np.histogram(energies, bins=bins)
+	data_energies = np.histogram(energies, bins=bins, density = density)
 
 	ax.plot(data_energies[1][0:-1], data_energies[0]/normalization, linewidth = 4, color = color, label = 'Data', linestyle = '', marker = 'o')
 	ax.set_yscale('log')
@@ -778,13 +777,18 @@ def plot_entropy_ensemble_deterministic(beta, b, nu, gamma, T, initial_time, eo,
 
 #----------------------------------------------------------------
 
-def generate_Sequences(n_seq, Energy_Matrix):
+def generate_Sequences(n_seq, Energy_Matrix, antigen_sequence, L, new_antigen = False):
 
 	M = Energy_Matrix
-
+	L = L
 
 	Alphabet = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't']
-	antigen_sequence = "".join(np.random.choice(Alphabet, 9))
+
+	antigen_sequence = antigen_sequence
+
+	if (new_antigen):
+		antigen_sequence = "".join(np.random.choice(Alphabet, L))
+
 	print('Antigen Seq: ' + antigen_sequence + '\n')
 
 	master_sequence = find_complementary_seq(sequence = antigen_sequence , Energy_Matrix =  M)
