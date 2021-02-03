@@ -33,6 +33,7 @@ class Sequence():
 		self.tree_position = 1 # 0 = internal ; 1 = external
 		self.hamming_distance = 0
 		if not(Master_Seq):
+
 			self.mutate_sequence(Energy_Matrix = Energy_Matrix)
 		if (Master_Seq):
 			self.energy = self.energy_parent
@@ -567,19 +568,19 @@ def plot_histogram_hamming_distance(Sequences, ax):
 
 	return distances
 
-def plot_histogram_energy(Sequences, normalization, bins, color, density, ax):
+def plot_histogram_energy(Sequences, normalization, bins, color, density, n_seq, ax):
 
 	energies = np.array([i.energy for i in Sequences])
 	data_energies = np.histogram(energies, bins=bins, density = density)
 
-	ax.plot(data_energies[1][0:-1], data_energies[0]/normalization, linewidth = 4, color = color, label = 'Data', linestyle = '', marker = 'o')
+	ax.plot(data_energies[1][0:-1], data_energies[0]/normalization, linewidth = 4, color = color, linestyle = '', marker = 'o', label = 'N=%.e'%(n_seq))
 	ax.set_yscale('log')
 	#ax.set_ylim(1,1e10)
 	ax.set_xlabel(r'Energy $r$', fontsize = 20)
 	ax.set_ylabel(r'', fontsize = 20)
 	ax.tick_params(labelsize = 20)
 	handles, labels = ax.get_legend_handles_labels()
-	ax.legend(np.concatenate(([],handles)),np.concatenate(([],labels)), loc = 2, fontsize = 20)
+	ax.legend(np.concatenate(([],handles)),np.concatenate(([],labels)), loc = 0, fontsize = 20)
 
 	return energies, data_energies
 
@@ -820,7 +821,7 @@ def generate_Sequences(n_seq, Energy_Matrix, antigen_sequence, L, new_antigen = 
 	    while(succ == False):
 	        parent = np.random.choice(Sequences)
 	        new_seq = Sequence(seq_id = i, parent = parent.sequence, energy_parent = parent.energy,  parent_id = parent.id, master_sequence = master_sequence, complementary_sequence = antigen_sequence, Energy_Matrix = M)
-	        #check if the new sequence is already in the tree. Here we can check for other condicions like that the energy is higher than the parent.
+	        #check if the new sequence is already in the tree. Here we can check for other conditions like that the energy is higher than the parent.
 	        if not(np.isin(new_seq.sequence, sequences)):
 	            parent.tree_position = 0    
 	            Sequences = np.append(Sequences, new_seq)
@@ -847,6 +848,41 @@ def generate_Sequences(n_seq, Energy_Matrix, antigen_sequence, L, new_antigen = 
 	file.close()
 	file_1.close()
 	file_2.close()
+
+	return Sequences
+
+def generate_Sequences_randomly(n_seq, Energy_Matrix, antigen_sequence, L, new_antigen = False):
+
+	M = Energy_Matrix
+	L = L
+	n_seq = n_seq
+
+	Alphabet = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't']
+
+	antigen_sequence = antigen_sequence
+
+	if (new_antigen):
+		antigen_sequence = "".join(np.random.choice(Alphabet, L))
+	print('Antigen Seq: ' + antigen_sequence + '\n')
+
+	master_sequence = find_complementary_seq(sequence = antigen_sequence , Energy_Matrix =  M)
+	print('Master Seq: ' + master_sequence + '\n')
+
+	master_sequence_energy = calculate_energy(Energy_Matrix = M, seq1 = master_sequence, seq2 = antigen_sequence)
+	print('Master Seq energy: ', master_sequence_energy, '\n')
+
+	Master_Sequence = Sequence(seq_id = 0, parent = master_sequence, energy_parent = master_sequence_energy, Master_Seq=True, master_sequence = master_sequence, complementary_sequence = antigen_sequence, Energy_Matrix = M)
+	
+	Sequences = np.array([Master_Sequence])
+
+	#Create n_seq random sequences and calculate the energy with respect to the given antigen.
+	for i in range(1, n_seq):
+
+		new_sequence = "".join(np.random.choice(Alphabet, L))
+		new_sequence_energy = calculate_energy(Energy_Matrix = M, seq1 = new_sequence, seq2 = antigen_sequence)
+		new_Sequence = Sequence(seq_id = i, parent = new_sequence, energy_parent = new_sequence_energy,  parent_id = i, master_sequence = master_sequence, complementary_sequence = antigen_sequence, Energy_Matrix = M, Master_Seq = True)
+
+		Sequences = np.append(Sequences, new_Sequence)
 
 	return Sequences
 
