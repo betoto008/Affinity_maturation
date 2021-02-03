@@ -16,11 +16,11 @@ M2 = np.loadtxt('../../../../Dropbox/Research/Evolution_Immune_System/Text_files
 Alphabet = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't']
 L = int(input('What is the length of the sequences? '))
 
-antigen_sequence = "".join(np.random.choice(Alphabet, L))
-
+#antigen_sequence = "".join(np.random.choice(Alphabet, L))
+antigen_sequence = 'kbbdsgesj'
 #n_seq = input('How many sequences do you want to create? ')
 
-n_seqs = np.array([1e2, 1e3, 1e4, 1e5])
+n_seqs = np.array([1e6])
 
 for n_seq in n_seqs:
 	Sequences = generate_Sequences(int(n_seq), Energy_Matrix = M2, antigen_sequence = antigen_sequence, L = L, new_antigen = False)
