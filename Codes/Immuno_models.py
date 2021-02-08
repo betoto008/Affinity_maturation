@@ -508,6 +508,18 @@ def find_complementary_seq(sequence, Energy_Matrix):
 	comp_seq = "".join(list_comp_seq)
 	return comp_seq
 
+def find_complementary_seq_2(sequence, Energy_Matrix):
+
+	M = Energy_Matrix
+	Alphabet = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't']
+	list_seq = list(sequence)
+	list_comp_seq = []
+	for i in list_seq:
+		pos_i = np.where(np.isin(Alphabet,i))[0][0]
+		list_comp_seq.append(Alphabet[np.where(np.isin(M[pos_i],max(M[pos_i])))[0][0]])
+	comp_seq = "".join(list_comp_seq)
+	return comp_seq
+
 def calculate_energy(Energy_Matrix, seq1, seq2):
 
 	M = Energy_Matrix
@@ -804,23 +816,29 @@ def generate_Sequences(n_seq, Energy_Matrix, antigen_sequence, L, new_antigen = 
 	sequences = np.array([master_sequence])
 	zero_date = datetime(2020, 1, 1)
 
-	file = open('../../../../Dropbox/Research/Evolution_Immune_System/Text_files/file_parent_daughter2.txt', 'w+')
-	file_1 = open('../../../../Dropbox/Research/Evolution_Immune_System/Text_files/timedNodeFile2.txt', 'w+')
-	file_2 = open('../../../../Dropbox/Research/Evolution_Immune_System/Text_files/strainFile2.txt', 'w+')
+	#----------UNCOMMENT TO WRITE OUTPUT FILES-----------
+	#file = open('../../../../Dropbox/Research/Evolution_Immune_System/Text_files/file_parent_daughter2.txt', 'w+')
+	#file_1 = open('../../../../Dropbox/Research/Evolution_Immune_System/Text_files/timedNodeFile2.txt', 'w+')
+	#file_2 = open('../../../../Dropbox/Research/Evolution_Immune_System/Text_files/strainFile2.txt', 'w+')
 	#np.savetxt(file_1, np.array(['Node', 'Parent', 'Time', 'SigClade']), fmt='%d')
 	#file.write("\n")
-	np.savetxt(file, np.array([str(Master_Sequence.id)+'\t', str(Master_Sequence.parent_id)]), fmt='%s', delimiter='', newline='', header = 'node\t parent\n', comments='')
-	file.write("\n")
-	np.savetxt(file_1, np.array([str(Master_Sequence.id)+'\t', str(Master_Sequence.parent_id)+'\t', str(43830)+'\t' , str(0)]), fmt='%s', delimiter='', newline='', header = 'Node\tParent\tTime\tSigClade\n', comments='')
-	file_1.write("\n")
+
+	#np.savetxt(file, np.array([str(Master_Sequence.id)+'\t', str(Master_Sequence.parent_id)]), fmt='%s', delimiter='', newline='', header = 'node\t parent\n', comments='')
+	#file.write("\n")
+	#np.savetxt(file_1, np.array([str(Master_Sequence.id)+'\t', str(Master_Sequence.parent_id)+'\t', str(43830)+'\t' , str(0)]), fmt='%s', delimiter='', newline='', header = 'Node\tParent\tTime\tSigClade\n', comments='')
+	#file_1.write("\n")
+
 	n_seq = n_seq
 	Energy = {'energy': {'0': Master_Sequence.energy}}
 	Hamming = {'hamming': {'0': 0}}
+	repeated = 0
 	for i in range(1, n_seq):
 	    succ = False 
 	    while(succ == False):
 	        parent = np.random.choice(Sequences)
 	        new_seq = Sequence(seq_id = i, parent = parent.sequence, energy_parent = parent.energy,  parent_id = parent.id, master_sequence = master_sequence, complementary_sequence = antigen_sequence, Energy_Matrix = M)
+	        if (np.isin(new_seq.sequence, sequences)):
+	        	repeated +=1
 	        #check if the new sequence is already in the tree. Here we can check for other conditions like that the energy is higher than the parent.
 	        if not(np.isin(new_seq.sequence, sequences)):
 	            parent.tree_position = 0    
@@ -829,25 +847,29 @@ def generate_Sequences(n_seq, Energy_Matrix, antigen_sequence, L, new_antigen = 
 	            Energy['energy'][str(new_seq.id)] = new_seq.energy
 	            Hamming['hamming'][str(new_seq.id)] = new_seq.hamming_distance
 	            succ = True
-	    np.savetxt(file, np.array([str(new_seq.id)+'\t', str(new_seq.parent_id)]), fmt='%s', delimiter='', newline='')
-	    file.write("\n")
-	    np.savetxt(file_1, np.array([str(new_seq.id)+'\t', str(new_seq.parent_id)+'\t', str(43830 + i)+'\t', str(0)]), fmt='%s', delimiter='', newline='')
-	    file_1.write("\n")
-	    
-	for i in range(1, n_seq):
-	    if(Sequences[i].tree_position==1):
-	        new_date = zero_date + timedelta(i)
-	        np.savetxt(file_2, np.array([str(Sequences[i].id)+'\t', 'A/Germany/'+str(i)+'/2020'+'\t', 'Germany'+'\t', 'EPI_ISL_'+str(i)+'\t', str(new_date.year)+'-'+str(new_date.month)+'-'+str(new_date.day)+'\t', '0']),fmt='%s', delimiter='', newline='')
-	        file_2.write("\n")
 
-	with open("../../../../Dropbox/Research/Evolution_Immune_System/Text_files/energy.json", 'w') as of:
-		json.dump(Energy, of, indent=True)
-	with open("../../../../Dropbox/Research/Evolution_Immune_System/Text_files/hamming.json", 'w') as of:
-		json.dump(Hamming, of, indent=True)
+	    #----------UNCOMMENT TO WRITE OUTPUT FILES-----------
+	    #np.savetxt(file, np.array([str(new_seq.id)+'\t', str(new_seq.parent_id)]), fmt='%s', delimiter='', newline='')
+	    #file.write("\n")
+	    #np.savetxt(file_1, np.array([str(new_seq.id)+'\t', str(new_seq.parent_id)+'\t', str(43830 + i)+'\t', str(0)]), fmt='%s', delimiter='', newline='')
+	    #file_1.write("\n")
 
-	file.close()
-	file_1.close()
-	file_2.close()
+	print('Found %d repeatead sequences. \n'%(repeated))
+	#----------UNCOMMENT TO WRITE OUTPUT FILES-----------
+	#for i in range(1, n_seq):
+	    #if(Sequences[i].tree_position==1):
+	        #new_date = zero_date + timedelta(i)
+	        #np.savetxt(file_2, np.array([str(Sequences[i].id)+'\t', 'A/Germany/'+str(i)+'/2020'+'\t', 'Germany'+'\t', 'EPI_ISL_'+str(i)+'\t', str(new_date.year)+'-'+str(new_date.month)+'-'+str(new_date.day)+'\t', '0']),fmt='%s', delimiter='', newline='')
+	        #file_2.write("\n")
+	#----------UNCOMMENT TO WRITE OUTPUT FILES-----------
+	#with open("../../../../Dropbox/Research/Evolution_Immune_System/Text_files/energy.json", 'w') as of:
+	#	json.dump(Energy, of, indent=True)
+	#with open("../../../../Dropbox/Research/Evolution_Immune_System/Text_files/hamming.json", 'w') as of:
+	#	json.dump(Hamming, of, indent=True)
+
+	#file.close()
+	#file_1.close()
+	#file_2.close()
 
 	return Sequences
 
