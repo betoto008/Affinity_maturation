@@ -25,23 +25,29 @@ double energy(double const & h, double const & J, int const & La, int const & Lb
 {
 	double E (0.);
     //FOR YOU TO FILL IN:
+    /*
 	for(int i=0;i<La-1;i++){
 		for(int j=0;j<Lb-1;j++){
 			double e=Pool[i][j]*Pool[i+1][j]*J + Pool[i][j]*Pool[i][j+1]*J + Pool[i][j]*h;
 			E+=e;
 		};
 	};
-	for(int i=0;i<Lb-1;i++){
-		double e=Pool[i][La-1]*Pool[i+1][La-1]*J + Pool[i][La-1]*Pool[i][0]*J + Pool[i][La-1]*h;
-		E=E+e;
-	};
+	*/
 	for(int i=0;i<La-1;i++){
-		double e=Pool[Lb-1][i]*Pool[Lb-1][i+1]*J + Pool[Lb-1][i]*Pool[0][i]*J + Pool[Lb-1][i]*h;
+		double e=Pool[i][0]*Pool[i+1][0]*J + Pool[i][0]*h;
+		//double e=Pool[i][Lb-1]*Pool[i+1][Lb-1]*J + Pool[i][Lb-1]*Pool[i][0]*J + Pool[i][Lb-1]*h;
 		E=E+e;
 	};
-	E=E+Pool[Lb-1][La-1]*Pool[0][La-1]*J + Pool[Lb-1][La-1]*Pool[Lb-1][0]*J + Pool[Lb-1][La-1]*h;
+	/*
+	for(int j=0;j<Lb-1;j++){
+		double e=Pool[La-1][j]*Pool[La-1][j+1]*J + Pool[La-1][j]*Pool[0][j]*J + Pool[La-1][j]*h;
+		E=E+e;
+	};
+	*/
+	E=E + Pool[La-1][0]*Pool[0][0]*J + Pool[La-1][0]*h;
+	//E=E+Pool[Lb-1][La-1]*Pool[0][La-1]*J + Pool[Lb-1][La-1]*Pool[Lb-1][0]*J + Pool[Lb-1][La-1]*h;
     //
-	return E;
+	return -E;
 };
 
 //Function to calculate the magnetisation:
@@ -65,6 +71,7 @@ inline double delt(double const & h, double const & J, int const & La, int const
 {
 	double deltaE (0.);
     //FOR YOU TO FILL IN
+
     if(ka!=La-1 && kb!=Lb-1 && ka!=0 && kb!=0){
   		deltaE = -2*J*(Pool[ka][kb]*Pool[ka+1][kb] + Pool[ka][kb]*Pool[ka-1][kb] + Pool[ka][kb]*Pool[ka][kb+1] + Pool[ka][kb]*Pool[ka][kb-1]);
   	}
@@ -92,9 +99,11 @@ inline double delt(double const & h, double const & J, int const & La, int const
   	if(ka==0 && kb==0){
   		deltaE = -2*J*(Pool[ka][kb]*Pool[ka+1][kb] + Pool[ka][kb]*Pool[La-1][kb] + Pool[ka][kb]*Pool[ka][kb+1] + Pool[ka][kb]*Pool[ka][Lb-1]);
   	}
-  	
+
+  	deltaE = 2*h*(Pool[ka][kb]);
+
     //
-	return -deltaE;
+	return deltaE;
 };
 
 //----------------------------------------------------------------------------------
@@ -105,12 +114,12 @@ int main(int argc, char* argv[])
     t1=clock();
 	//-----------------------------------------------------------------------------
 	//Parameters: (they are fine as they are)
-	int La (50), Lb (50);//Number of spins in each direction:
+	int La (80), Lb (1);//Number of spins in each direction:
 	int N (La*Lb); //Total number of spins
-	double h (0.0), J(1.); //ExterLal field and coupling
-	double T1 (2.0), T2(2.6); //Temperature min and max
-	int nT (150); //Number of temperature points
-	long long int n0 (1000*N), N0 (25000*N), d0 (10*N); //Number of steps: initial prelude, total, distance between sampling points
+	double h (1.0), J(0.0); //External field and coupling
+	double T1 (.1), T2(1); //Temperature min and max
+	int nT (1); //Number of temperature points
+	long long int n0 (0*N), N0 (100000*N), d0 (1); //Number of steps: initial prelude, total, distance between sampling points
 	//Array of spins
 	vector < vector<int> > Pool;
 	Pool.resize(La);
@@ -123,20 +132,23 @@ int main(int argc, char* argv[])
 	{
 		for (int kb= 0; kb<Lb; kb++)
 		{
-			Pool[ka][kb]=2*randIX(0,1)-1;
+			Pool[ka][kb]= 1 ;
 		};
 	};
 	//------------------------------------------------------------------------------
 	ofstream fout ("output.txt");
+
 	for (int kT= 0; kT<nT; kT++)
 	{
 
-		double T (T2-(T2-T1)*double(kT)/double(nT-1));
+		//double T (T2-(T2-T1)*double(kT)/double(nT-1));
+		double T = T2;
 		cout<< ">T= "<< T<< endl;
 		
         
 		double E, M; //Energy, magnetisation
 		E= energy(h,J,La,Lb,Pool);
+		fout<< E<< "\t"<<0.0 <<endl;
 		M= magnetisation(h,J,La,Lb,Pool);
 
 		double avrE (0.), avrEE (0.), avrM (0.), avrMM (0.); //Averages of E, E^2, M, M^2
@@ -164,13 +176,14 @@ int main(int argc, char* argv[])
 			//
 			
 			//Calculate the observables starting after n0 steps: sample data points every d0 steps (for Eq.(2))
-			if (k>n0)
+			if (k>=n0)
 			{
 				if ( (k%d0) == 0)
 				{
 					//Increase the number of data sum
 					countData++;
 					E= energy(h,J,La,Lb,Pool);
+					fout<< E<< "\t"<<deltaE <<endl;
 					M= magnetisation(h,J,La,Lb,Pool);
 					//Update the sums in Eq.(2) for energy, heat capacity(EE suffices), magnetisation and susceptibility(MM suffices)
 					//FOR YOU TO FILL-IN
@@ -192,7 +205,7 @@ int main(int argc, char* argv[])
 		//
 		
 		//Write to an output file:
-		fout<< T<< "\t"<< avrE/double(N)<< "\t"<< heatcapacity/double(N)<< "\t"<< avrM/double(N)<< "\t"<< susceptibility/double(N) <<endl;
+		//fout<< T<< "\t"<< avrE/double(N)<< "\t"<< heatcapacity/double(N)<< "\t"<< avrM/double(N)<< "\t"<< susceptibility/double(N) <<endl;
 	};
 	fout.close();
 	//------------------------------------------------------------------------------
