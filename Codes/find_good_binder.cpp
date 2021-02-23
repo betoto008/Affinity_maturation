@@ -10,6 +10,7 @@
 #include <vector>
 #include <cmath>
 #include <time.h>
+#include <algorithm>
 
 using namespace std;
 //Library for random number generators
@@ -21,7 +22,7 @@ using namespace std;
 //----------------------------------------------------------------------------------
 
 //Function to calculate the energy: Implement the Energy Matrix
-double energy(int const & L, int const & L_alphabet, vector< vector<double> > const & MJ, vector< int > const & sequence, vector< int > const & Antigen)
+double Energy(int const & L, int const & L_alphabet, vector< vector<double> > const & MJ, vector< int > const & sequence, vector< int > const & Antigen)
 {
 	double E (0.);
 
@@ -32,9 +33,28 @@ double energy(int const & L, int const & L_alphabet, vector< vector<double> > co
 	return E;
 };
 
+//Function to calculate complementary sequence
+vector<int> find_complementary(int const & L, int const & L_alphabet, vector< vector<double> > const & MJ, vector< string > const & Alphabet, vector< int > const & sequence)
+{
+	vector < int > complementary_sequence;
+	complementary_sequence.resize(L);
+	//cout << "The complementary sequence is: ";
+    for(int i=0; i<L ; i++){
+    	vector < double > v;
+    	v.resize(L);
+    	v = MJ[sequence[i]-1];
+    	int index = std::min_element(v.begin(), v.end())- v.begin();
+    	complementary_sequence[i] = index;
+    	//cout << Alphabet[index];
+    }
+    //cout << "\n";
+    //
+    return complementary_sequence;
+};
+
 //Function to calculate the energy difference due to a mutation
 //Do NOT use energy(seq 1)-energy(seq 2) as this is computatioLally costly: the energy difference depends on mutation position only
-inline double delt( int const & L, int const & L_alphabet, vector< vector<double> > const & MJ, vector< string > const & Alphabet, vector< int > const & sequence, vector< int > const & Antigen, int const & pos, int const & aa)
+inline double delt( int const & L, int const & L_alphabet, vector< vector<double> > const & MJ, vector< int > const & sequence, vector< int > const & Antigen, int const & pos, int const & aa)
 {
 	double deltaE (0.);
 	deltaE = MJ[Antigen[pos]-1][aa-1] - MJ[Antigen[pos]-1][sequence[pos]-1];
@@ -45,7 +65,7 @@ inline double delt( int const & L, int const & L_alphabet, vector< vector<double
 int main(int argc, char* argv[])
 {	
 	string Text_files_path = "../../../../Dropbox/Research/Evolution_Immune_System/Text_files/";
-	cout<<">Running Monte Carlo simulation of the BCRs ..."<< endl;
+	cout<<">Running Monte Carlo simulation of the BCRs ...\n"<< endl;
 	clock_t t1,t2;
     t1=clock();
 	//-----------------------------------------------------------------------------
@@ -58,13 +78,10 @@ int main(int argc, char* argv[])
 	int N0[1] = {1E8};
 	int array1[9] = {8, 5, 6, 17, 14, 18, 9, 8, 17};
 	int array2[9] = {3, 3, 3, 3, 3, 7, 4, 3, 3};
-	//Array with the antigen
-	vector < int > Antigen;
-	Antigen.resize(L);
-	//Array with the current sequence
-	vector < int > sequence;
-	sequence.resize(L);
-	//------------Energy Matrix------------------------------------------------------
+
+	
+	//------------ Energy Matrix ------------------------------------------------------
+	//MJ Matrix
 	vector < vector < double > > MJ;
 	MJ.resize(L_alphabet);
 	for (int k= 0; k<L_alphabet; k++)
@@ -79,13 +96,70 @@ int main(int argc, char* argv[])
 	        file >> MJ[i][j];
 	    }
 	}
-	//--------------------------------------------------------------------------------
-	//Initiating Antigen -------------------------------------------------------------
-	for (int k= 0; k<L; k++)
-	{
-		Antigen[k]= array1[k];
-	};
 
+	//------------ Alphabet ----------------------------------------------------------
+	//Array with the Alphabet
+	vector < string > Alphabet;
+	Alphabet.resize(L_alphabet);
+	ifstream file2("Alphabet.txt");
+	//cout << "The Alphabet is :";
+
+	for (int k = 0; k < L_alphabet; k++) {
+
+	    file2 >> Alphabet[k];
+	    //cout << Alphabet[k] ;
+	
+	}
+	//cout << "\n";
+
+	//------------- Initiating Antigen ------------------------------------------------
+	//Array with the antigen
+	vector < int > Antigen;
+	Antigen.resize(L);
+	vector < int > Antigen_i;
+	Antigen_i.resize(L);
+
+	//---------------Initiating sequence with the Master sequence----------------------
+	//Array with the current sequence
+	vector < int > master_sequence;
+	master_sequence.resize(L);
+
+	//Array with the current sequence
+	vector < int > complementary_sequence;
+	complementary_sequence.resize(L);
+	
+	double e = 0;
+	double e_new;
+	for(int i = 0; i<100000 ; i++){
+
+		for (int k= 0; k<L; k++){
+			//sequence[k]= array2[k];
+			//Antigen[k]= array1[k];
+			Antigen_i[k] = randIX(1,L_alphabet);		
+		};
+
+		complementary_sequence = find_complementary(L, L_alphabet, MJ, Alphabet, Antigen_i);
+		e_new = Energy(L, L_alphabet, MJ, complementary_sequence, Antigen_i);
+
+		if(e_new<e){
+			e = e_new;
+			master_sequence = complementary_sequence;
+			Antigen = Antigen_i;
+		}
+	}
+	cout << "Antigen:";
+	for (int k= 0; k<L; k++){
+		cout << Alphabet[Antigen[k]-1];
+	};
+	cout << "\n";
+	cout << "Master Sequence:";
+	for (int k= 0; k<L; k++){
+		cout << Alphabet[master_sequence[k]-1];
+	};
+	cout << "\n";
+	cout << "Binding energy:"<< e << "\n";
+
+	/*
 	for (int kT= 0; kT<nT; kT++)
 	{	
 
@@ -145,20 +219,10 @@ int main(int argc, char* argv[])
 				};
 			};
 		};
-		/*
-        //Divide the sums by the number of data points to get the averages
-		avrE/=double(countData); avrEE/=double(countData); avrM/=double(countData); avrMM/=double(countData);
-		
-		//FOR YOU TO FILL IN:
-		double heatcapacity= (avrEE - avrE*avrE)/(T*T) ;
-        double susceptibility= (avrMM - avrM*avrM)/(T);
-		
-
-		//Write to an output file:
-		//fout<< T<< "\t"<< avrE/double(N)<< "\t"<< heatcapacity/double(N)<< "\t"<< avrM/double(N)<< "\t"<< susceptibility/double(N) <<endl;
-		*/
-		fout.close();
+	fout.close();	
 	};
+
+*/
 
 	
 	//------------------------------------------------------------------------------
