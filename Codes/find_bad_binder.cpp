@@ -26,29 +26,25 @@ double Energy(int const & L, int const & L_alphabet, vector< vector<double> > co
 	double E (0.);
 
     for(int i=0; i<L ; i++){
-    	E = E + MJ[Antigen[i]-1][sequence[i]-1];
+    	E = E + MJ[Antigen[i]][sequence[i]];
     }
 
 	return E;
 };
 
 //Function to calculate complementary sequence
-vector<int> find_complementary(int const & L, int const & L_alphabet, vector< vector<double> > const & MJ, vector< string > const & Alphabet, vector< int > const & sequence)
+void find_complementary(int const & L, int const & L_alphabet, vector< vector<double> > const & MJ, vector< string > const & Alphabet, vector< int > const & sequence, vector<int> & complementary_sequence)
 {
-	vector < int > complementary_sequence;
-	complementary_sequence.resize(L);
-	//cout << "The complementary sequence is: ";
+    //cout << "The complementary sequence is: ";
     for(int i=0; i<L ; i++){
-    	vector < double > v;
-    	v.resize(L);
-    	v = MJ[sequence[i]-1];
-    	int index = std::min_element(v.begin(), v.end())- v.begin();
-    	complementary_sequence[i] = index;
-    	//cout << Alphabet[index];
+        vector < double > v;
+        v.resize(L);
+        v = MJ[sequence[i]];
+        int index = std::min_element(v.begin(), v.end())- v.begin();
+        complementary_sequence[i] = index;
+        //cout << Alphabet[index];
     }
     //cout << "\n";
-    //
-    return complementary_sequence;
 };
 
 //Function to calculate the energy difference due to a mutation
@@ -132,28 +128,27 @@ int main(int argc, char* argv[])
 	for(int i = 0; i<100000 ; i++){
 
 		for (int k= 0; k<L; k++){
-			//sequence[k]= array2[k];
-			//Antigen[k]= array1[k];
-			Antigen_i[k] = randIX(1,L_alphabet);		
+			Antigen_i[k] = randIX(0,L_alphabet-1);
 		};
 
-		complementary_sequence = find_complementary(L, L_alphabet, MJ, Alphabet, Antigen_i);
-		e_new = Energy(L, L_alphabet, MJ, complementary_sequence, Antigen_i);
+		find_complementary(L, L_alphabet, MJ, Alphabet, Antigen_i, master_sequence);
+		e_new = Energy(L, L_alphabet, MJ, master_sequence, Antigen_i);
 
 		if(e_new>e){
 			e = e_new;
-			master_sequence = complementary_sequence;
 			Antigen = Antigen_i;
 		}
 	}
+    find_complementary(L, L_alphabet, MJ, Alphabet, Antigen, master_sequence);
+    
 	cout << "Antigen:";
 	for (int k= 0; k<L; k++){
-		cout << Alphabet[Antigen[k]-1];
+		cout << Alphabet[Antigen[k]];
 	};
 	cout << "\n";
 	cout << "Master Sequence:";
 	for (int k= 0; k<L; k++){
-		cout << Alphabet[master_sequence[k]-1];
+		cout << Alphabet[master_sequence[k]];
 	};
 	cout << "\n";
 	cout << "Binding energy:"<< e << "\n";

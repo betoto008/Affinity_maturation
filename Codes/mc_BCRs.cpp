@@ -25,9 +25,8 @@ double energy(int const & L, int const & L_alphabet, vector< vector<double> > co
 	double E (0.);
 
     for(int i=0; i<L ; i++){
-    	E = E + MJ[Antigen[i]-1][sequence[i]-1];
+    	E = E + MJ[Antigen[i]][sequence[i]];
     }
-
 	return E;
 };
 
@@ -36,23 +35,38 @@ double energy(int const & L, int const & L_alphabet, vector< vector<double> > co
 inline double delt( int const & L, int const & L_alphabet, vector< vector<double> > const & MJ, vector< int > const & sequence, vector< int > const & Antigen, int const & pos, int const & aa)
 {
 	double deltaE (0.);
-	deltaE = MJ[Antigen[pos]-1][aa-1] - MJ[Antigen[pos]-1][sequence[pos]-1];
+	deltaE = MJ[Antigen[pos]][aa] - MJ[Antigen[pos]][sequence[pos]];
 	return deltaE;
 };
 
-/*
-void aa_to_positions( int const & L, int const & L_alphabet, vector< string > const & Alphabet,  vector< int > & sequence_pos,  string const & sequence_aa)
+
+void aa_to_positions( int const & L, int const & L_alphabet, vector< string > & Alphabet,  vector< int > & sequence_pos,  string  sequence_aa)
 {
 	for(int i=0; i<L ;i++){
 		
 		for(int j=0; j<L_alphabet ;j++){
-			if(sequence_aa[i] == Alphabet[j]){
+			if(sequence_aa[i] == Alphabet[j][0]){
 				sequence_pos[i] = j;
 			}
 		}
 	}
 };
-*/
+
+//Function to calculate complementary sequence
+void find_complementary(int const & L, int const & L_alphabet, vector< vector<double> > const & MJ, vector< string > const & Alphabet, vector< int > const & sequence, vector<int> & complementary_sequence)
+{
+    //cout << "The complementary sequence is: ";
+    for(int i=0; i<L ; i++){
+        vector < double > v;
+        v.resize(L);
+        v = MJ[sequence[i]];
+        int index = std::min_element(v.begin(), v.end()) - v.begin();
+        complementary_sequence[i] = index;
+        //cout << Alphabet[index];
+    }
+    //cout << "\n";
+};
+
 //----------------------------------------------------------------------------------
 int main(int argc, char* argv[])
 {	
@@ -61,32 +75,14 @@ int main(int argc, char* argv[])
 	clock_t t1,t2;
     t1=clock();
 	//-----------------------------------------------------------------------------
-	//Parameters: (they are fine as they are)
+	//Parameters:
 	int L (9); //length of the sequence
 	int L_alphabet (20);
-	int nT (0); //Number of temperature points
+	int NT (1); //Number of runs
 	double T1 (.1) ; double T2 (.8);
 	long long int n0 (0*L), N02 (2E6*L), d0 (10*L); //Number of steps: initial prelude, total, distance between sampling points
 	int N0[1] = {1E8};
 
-	
-
-	//int *Antigen[L];
-
-	int array2[9] = {3, 3, 3, 3, 3, 7, 4, 3, 3};
-	//Array with the antigen
-	string Antigen_aa;
-	getline(cin, Antigen_aa);
-	for (int k= 0; k<L; k++)
-	{
-		cout << Antigen_aa[k];
-	};
-
-	vector < int > Antigen;
-	Antigen.resize(L);
-	//Array with the current sequence
-	vector < int > sequence;
-	sequence.resize(L);
 	//------------Energy Matrix------------------------------------------------------
 	vector < vector < double > > MJ;
 	MJ.resize(L_alphabet);
@@ -102,36 +98,59 @@ int main(int argc, char* argv[])
 	vector < string > Alphabet;
 	Alphabet.resize(L_alphabet);
 	ifstream file2("Alphabet.txt");
-	//cout << "The Alphabet is :";
-
+	cout << "The Alphabet is :";
 	for (int k = 0; k < L_alphabet; k++) {
 
 	    file2 >> Alphabet[k];
-	    //cout << Alphabet[k] ;
+	    cout << Alphabet[k] ;
 	
 	}
-
+    cout << "\n";
 	for (unsigned int i = 0; i < L_alphabet; i++) {
 	    for (unsigned int j = 0; j < L_alphabet; j++) {
 	        file >> MJ[i][j];
 	    }
 	}
-	//--------------------------------------------------------------------------------
-	//Initiating Antigen -------------------------------------------------------------
-	//for (int k= 0; k<L; k++)
-	//{
-	//	Antigen[k]= array1[k];
-	//};
+    //------------- Antigen -------------------------------------------------------------
+    //Array with the antigen
+    string Antigen_aa;
+    cout << "Insert the Aminoacid sequence of the antigen:\n";
+    getline(cin, Antigen_aa);
+    
+    vector < int > Antigen;
+    Antigen.resize(L);
+    aa_to_positions(L, L_alphabet, Alphabet, Antigen, Antigen_aa);
 
-	for (int kT= 0; kT<nT; kT++)
-	{	
+	//-----------------------------------------------------------------------------------
+    
+    //Array with the Master Sequence
+    vector < int > Master_Sequence;
+    Master_Sequence.resize(L);
+    find_complementary(L, L_alphabet, MJ, Alphabet, Antigen, Master_Sequence);
+    
+    //Array with the current Sequence
+    vector < int > Sequence;
+    Sequence.resize(L);
 
-		//Initiating sequence with the Master sequence------------------------------------
-		for (int k= 0; k<L; k++)
-		{
-			sequence[k]= array2[k];
+    Sequence = Master_Sequence;
+    
+    for (int k= 0; k<L; k++)
+    {
+        cout << Alphabet[Master_Sequence[k]];
+    }
+    cout << "\n";
+    
+    double E; //Energy
+    E= energy(L,L_alphabet,MJ,Sequence,Antigen);
+    cout << E <<"\n";
+    
+	for (int kT = 0; kT<NT; kT++)
+	{
+		//Initiating Sequence with random sequence------------------------------------
+		//for (int k= 0; k<L; k++)
+		//{
 			//sequence[k] = randIX(1,L_alphabet);
-		};
+		//};
 		//--------------------------------------------------------------------------------
 
 		// Set the temperature
@@ -139,13 +158,11 @@ int main(int argc, char* argv[])
 		double T = T2;
 
 		//Output file
-		ofstream fout (Text_files_path+"output_T-"+std::to_string(T)+"_N-"+ std::to_string(N0[kT])+".txt");
+		ofstream fout (Text_files_path+"output_T-"+std::to_string(T)+"_N-"+ std::to_string(N0[kT])+"_Antigen-"+Antigen_aa+".txt");
 
 		cout<< ">T= "<< T<< endl;
 		
-		double E; //Energy
-		//E= energy(L,L_alphabet,MJ,sequence,Antigen);
-		fout<< E<< "\t"<<0.0 << "\t"<< 0 <<endl;
+		fout<< E << "\t"<<0.0 << "\t"<< 0 <<endl;
         
         //Starting the trajectory:
 		int countData (0); //Number of data point sampled in the trajectory
@@ -154,18 +171,18 @@ int main(int argc, char* argv[])
 			//FOR YOU TO FILL-IN:
 			//Pick up a position and an aminoacid and calculate the energy difference if it were mutated
   			int pos = randIX(0,L-1);
-  			int aa = randIX(1,L_alphabet);
+  			int aa = randIX(0,L_alphabet-1);
   			
-  			double deltaE = delt(L, L_alphabet, MJ, sequence, Antigen, pos, aa);
+  			double deltaE = delt(L, L_alphabet, MJ, Sequence, Antigen, pos, aa);
 
 			//Decide whether to actually flip the spin or not: (Metropolis' algorithm)
 			if (deltaE<0){
-				sequence[pos] = aa;
+				Sequence[pos] = aa;
 			}
 			else{
 				double rand = randX(0,1);
 				if(rand < exp((-1*deltaE)/T)){
-					sequence[pos]=aa;
+					Sequence[pos]=aa;
 				}
 			};
 			//
@@ -177,8 +194,8 @@ int main(int argc, char* argv[])
 				{
 					//Increase the number of data sum
 					countData++;
-					E= energy(L,L_alphabet,MJ,sequence,Antigen);
-					//fout<< E<< "\t"<< deltaE << "\t"<< aa <<endl;				
+					E= energy(L,L_alphabet,MJ,Sequence,Antigen);
+					fout<< E<< "\t"<< deltaE << "\t"<< aa <<endl;
 				};
 			};
 		};
