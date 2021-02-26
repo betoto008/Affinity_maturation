@@ -127,7 +127,7 @@ int main(int argc, char* argv[])
 	vector < int > complementary_sequence;
 	complementary_sequence.resize(L);
 	
-	double e = 0;
+	double e = -50;
 	double e_new;
 	for(int i = 0; i<100000 ; i++){
 
@@ -140,7 +140,7 @@ int main(int argc, char* argv[])
 		complementary_sequence = find_complementary(L, L_alphabet, MJ, Alphabet, Antigen_i);
 		e_new = Energy(L, L_alphabet, MJ, complementary_sequence, Antigen_i);
 
-		if(e_new<e){
+		if(e_new>e){
 			e = e_new;
 			master_sequence = complementary_sequence;
 			Antigen = Antigen_i;

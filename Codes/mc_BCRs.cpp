@@ -1,7 +1,6 @@
 //Template to run a Monte Carlo simulation for the BCRs.
 //Input: (all parameters are already set internally!)
 
-//Output: output.txt (columns: 1 temperature , 2 energy per spin, 3 heat capacity, 4 magnetisation per spin, 5 susceptibility  )
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -34,13 +33,26 @@ double energy(int const & L, int const & L_alphabet, vector< vector<double> > co
 
 //Function to calculate the energy difference due to a mutation
 //Do NOT use energy(seq 1)-energy(seq 2) as this is computatioLally costly: the energy difference depends on mutation position only
-inline double delt( int const & L, int const & L_alphabet, vector< vector<double> > const & MJ, vector< string > const & Alphabet, vector< int > const & sequence, vector< int > const & Antigen, int const & pos, int const & aa)
+inline double delt( int const & L, int const & L_alphabet, vector< vector<double> > const & MJ, vector< int > const & sequence, vector< int > const & Antigen, int const & pos, int const & aa)
 {
 	double deltaE (0.);
 	deltaE = MJ[Antigen[pos]-1][aa-1] - MJ[Antigen[pos]-1][sequence[pos]-1];
 	return deltaE;
 };
 
+/*
+void aa_to_positions( int const & L, int const & L_alphabet, vector< string > const & Alphabet,  vector< int > & sequence_pos,  string const & sequence_aa)
+{
+	for(int i=0; i<L ;i++){
+		
+		for(int j=0; j<L_alphabet ;j++){
+			if(sequence_aa[i] == Alphabet[j]){
+				sequence_pos[i] = j;
+			}
+		}
+	}
+};
+*/
 //----------------------------------------------------------------------------------
 int main(int argc, char* argv[])
 {	
@@ -52,13 +64,24 @@ int main(int argc, char* argv[])
 	//Parameters: (they are fine as they are)
 	int L (9); //length of the sequence
 	int L_alphabet (20);
-	int nT (1); //Number of temperature points
-	double T1 (.1) ; double T2 (2);
+	int nT (0); //Number of temperature points
+	double T1 (.1) ; double T2 (.8);
 	long long int n0 (0*L), N02 (2E6*L), d0 (10*L); //Number of steps: initial prelude, total, distance between sampling points
 	int N0[1] = {1E8};
-	int array1[9] = {8, 5, 6, 17, 14, 18, 9, 8, 17};
+
+	
+
+	//int *Antigen[L];
+
 	int array2[9] = {3, 3, 3, 3, 3, 7, 4, 3, 3};
 	//Array with the antigen
+	string Antigen_aa;
+	getline(cin, Antigen_aa);
+	for (int k= 0; k<L; k++)
+	{
+		cout << Antigen_aa[k];
+	};
+
 	vector < int > Antigen;
 	Antigen.resize(L);
 	//Array with the current sequence
@@ -74,6 +97,20 @@ int main(int argc, char* argv[])
 
 	ifstream file("MJ2.txt");
 
+	//------------ Alphabet ----------------------------------------------------------
+	//Array with the Alphabet
+	vector < string > Alphabet;
+	Alphabet.resize(L_alphabet);
+	ifstream file2("Alphabet.txt");
+	//cout << "The Alphabet is :";
+
+	for (int k = 0; k < L_alphabet; k++) {
+
+	    file2 >> Alphabet[k];
+	    //cout << Alphabet[k] ;
+	
+	}
+
 	for (unsigned int i = 0; i < L_alphabet; i++) {
 	    for (unsigned int j = 0; j < L_alphabet; j++) {
 	        file >> MJ[i][j];
@@ -81,10 +118,10 @@ int main(int argc, char* argv[])
 	}
 	//--------------------------------------------------------------------------------
 	//Initiating Antigen -------------------------------------------------------------
-	for (int k= 0; k<L; k++)
-	{
-		Antigen[k]= array1[k];
-	};
+	//for (int k= 0; k<L; k++)
+	//{
+	//	Antigen[k]= array1[k];
+	//};
 
 	for (int kT= 0; kT<nT; kT++)
 	{	
@@ -102,12 +139,12 @@ int main(int argc, char* argv[])
 		double T = T2;
 
 		//Output file
-		ofstream fout (Text_files_path+"output_highT_N-"+ std::to_string(N0[kT])+".txt");
+		ofstream fout (Text_files_path+"output_T-"+std::to_string(T)+"_N-"+ std::to_string(N0[kT])+".txt");
 
 		cout<< ">T= "<< T<< endl;
 		
 		double E; //Energy
-		E= energy(L,L_alphabet,MJ,sequence,Antigen);
+		//E= energy(L,L_alphabet,MJ,sequence,Antigen);
 		fout<< E<< "\t"<<0.0 << "\t"<< 0 <<endl;
         
         //Starting the trajectory:
@@ -119,7 +156,7 @@ int main(int argc, char* argv[])
   			int pos = randIX(0,L-1);
   			int aa = randIX(1,L_alphabet);
   			
-  			double deltaE = delt(L, L_alphabet,MJ, sequence, Antigen, pos, aa);
+  			double deltaE = delt(L, L_alphabet, MJ, sequence, Antigen, pos, aa);
 
 			//Decide whether to actually flip the spin or not: (Metropolis' algorithm)
 			if (deltaE<0){
@@ -141,7 +178,7 @@ int main(int argc, char* argv[])
 					//Increase the number of data sum
 					countData++;
 					E= energy(L,L_alphabet,MJ,sequence,Antigen);
-					fout<< E<< "\t"<< deltaE << "\t"<< aa <<endl;				
+					//fout<< E<< "\t"<< deltaE << "\t"<< aa <<endl;				
 				};
 			};
 		};
