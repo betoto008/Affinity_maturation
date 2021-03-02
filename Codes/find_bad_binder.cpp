@@ -1,17 +1,8 @@
-//Template to find good binder.
+//Template to find bad binder.
 //Input: (all parameters are already set internally!)
 
+#include "./lib/Immuno_functions.hpp"
 
-#include <stdlib.h>
-#include <stdio.h>
-#include <iostream>
-#include <fstream>
-#include <vector>
-#include <cmath>
-#include <time.h>
-#include <algorithm>
-
-using namespace std;
 //Library for random number generators
 #include "./lib/random.cpp"
 //There are two functions extracted from the library
@@ -19,42 +10,7 @@ using namespace std;
 //int randIX(min,max): an integer random number between min and max  
 
 //----------------------------------------------------------------------------------
-
-//Function to calculate the energy: Implement the Energy Matrix
-double Energy(int const & L, int const & L_alphabet, vector< vector<double> > const & MJ, vector< int > const & sequence, vector< int > const & Antigen)
-{
-	double E (0.);
-
-    for(int i=0; i<L ; i++){
-    	E = E + MJ[Antigen[i]][sequence[i]];
-    }
-
-	return E;
-};
-
-//Function to calculate complementary sequence
-void find_complementary(int const & L, int const & L_alphabet, vector< vector<double> > const & MJ, vector< string > const & Alphabet, vector< int > const & sequence, vector<int> & complementary_sequence)
-{
-    //cout << "The complementary sequence is: ";
-    for(int i=0; i<L ; i++){
-        vector < double > v;
-        v.resize(L);
-        v = MJ[sequence[i]];
-        int index = std::min_element(v.begin(), v.end())- v.begin();
-        complementary_sequence[i] = index;
-        //cout << Alphabet[index];
-    }
-    //cout << "\n";
-};
-
-//Function to calculate the energy difference due to a mutation
-//Do NOT use energy(seq 1)-energy(seq 2) as this is computatioLally costly: the energy difference depends on mutation position only
-inline double delt( int const & L, int const & L_alphabet, vector< vector<double> > const & MJ, vector< int > const & sequence, vector< int > const & Antigen, int const & pos, int const & aa)
-{
-	double deltaE (0.);
-	deltaE = MJ[Antigen[pos]-1][aa-1] - MJ[Antigen[pos]-1][sequence[pos]-1];
-	return deltaE;
-};
+using namespace std;
 
 //----------------------------------------------------------------------------------
 int main(int argc, char* argv[])
@@ -65,7 +21,7 @@ int main(int argc, char* argv[])
     t1=clock();
 	//-----------------------------------------------------------------------------
 	//Parameters: (they are fine as they are)
-	int L (9); //length of the sequence
+	int L (12); //length of the sequence
 	int L_alphabet (20);
 	int nT (1); //Number of temperature points
 	double T1 (.1) ; double T2 (2);
