@@ -27,11 +27,11 @@ int main(int argc, char* argv[])
     //-----------------------------------------------------------------------------
     //Parameters:
     int L (12); //length of the sequence
-    int L_alphabet (20);
+    int L_alphabet (20); //length of the alphabet
     int NT (1); //Number of runs
-    double T1 (.1) ; double T2 (.8);
-    long long int n0 (0*L), N02 (2E6*L), d0 (10*L); //Number of steps: initial prelude, total, distance between sampling points
-    int N0[1] = {1E8};
+    double T1 (.1) ; double T2 (.6); //range of temperatures
+    long long int n0 (0*L), d0 (100*L); //Number of steps: initial prelude, distance between sampling points
+    int N0[1] = {1E8}; // Array with MCMC steps
 
     //------------Energy Matrix------------------------------------------------------
     vector < vector < double > > MJ;
@@ -73,27 +73,28 @@ int main(int argc, char* argv[])
 
     //-----------------------------------------------------------------------------------
     
-    //Array with the Master Sequence
+    //---------Array with the Master Sequence--------------------------------------------
     vector < int > Master_Sequence;
     Master_Sequence.resize(L);
     find_complementary(L, L_alphabet, MJ, Alphabet, Antigen, Master_Sequence);
+    double E0 = energy(L, L_alphabet, MJ, Master_Sequence, Antigen);
     
-    //Array with the current Sequence
+    //---------Array with the current Sequence-------------------------------------------
     vector < int > Sequence;
     Sequence.resize(L);
-
     Sequence = Master_Sequence;
-    
     for (int k= 0; k<L; k++)
     {
         cout << Alphabet[Master_Sequence[k]];
     }
     cout << "\n";
     
-    double E; //Energy
+    //initialize current energy of the MCMC
+    double E;
     E= energy(L,L_alphabet,MJ,Sequence,Antigen);
     cout << E <<"\n";
     
+    // For-loop over different temperatures
     for (int kT = 0; kT<NT; kT++)
     {
         //Initiating Sequence with random sequence------------------------------------
@@ -114,18 +115,17 @@ int main(int argc, char* argv[])
         
         fout<< E << "\t"<<0.0 << "\t"<< 0 <<endl;
         
-        //Starting the trajectory:
+        //Starting the trajectory of the MCMCM:
         int countData (0); //Number of data point sampled in the trajectory
         for (long long int k= 0; k < (N0[kT]*L); k++)
         {
-            //FOR YOU TO FILL-IN:
             //Pick up a position and an aminoacid and calculate the energy difference if it were mutated
               int pos = randIX(0,L-1);
               int aa = randIX(0,L_alphabet-1);
               
               double deltaE = delt(L, L_alphabet, MJ, Sequence, Antigen, pos, aa);
 
-            //Decide whether to actually flip the spin or not: (Metropolis' algorithm)
+            //Decide whether to actually mutate the sequence: (Metropolis' algorithm)
             if (deltaE<0){
                 Sequence[pos] = aa;
             }
@@ -135,36 +135,25 @@ int main(int argc, char* argv[])
                     Sequence[pos]=aa;
                 }
             };
-            //
             
-            //Calculate the observables starting after n0 steps: sample data points every d0 steps (for Eq.(2))
+            //Calculate the observables starting after n0 steps: sample data points every d0 steps
             if (k>=n0)
             {
                 if ( (k%d0) == 0)
                 {
-                    //Increase the number of data sum
-                    countData++;
                     E= energy(L,L_alphabet,MJ,Sequence,Antigen);
-                    fout<< E<< "\t"<< deltaE << "\t"<< aa <<endl;
+                    if (E<(E0+12)) {//if the energy is lower than E0+12
+                        // print the energy value
+                        //fout<< E<< "\t"<< deltaE << "\t"<< aa <<endl;
+                        fout<< E << endl;
+                    }
                 };
             };
         };
-        /*
-        //Divide the sums by the number of data points to get the averages
-        avrE/=double(countData); avrEE/=double(countData); avrM/=double(countData); avrMM/=double(countData);
         
-        //FOR YOU TO FILL IN:
-        double heatcapacity= (avrEE - avrE*avrE)/(T*T) ;
-        double susceptibility= (avrMM - avrM*avrM)/(T);
-        
-
-        //Write to an output file:
-        //fout<< T<< "\t"<< avrE/double(N)<< "\t"<< heatcapacity/double(N)<< "\t"<< avrM/double(N)<< "\t"<< susceptibility/double(N) <<endl;
-        */
         fout.close();
     };
 
-    
     //------------------------------------------------------------------------------
     cout<< ">Simulation completed…"<< endl;
     t2= clock();

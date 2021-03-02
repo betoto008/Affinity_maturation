@@ -66,3 +66,9 @@ void find_complementary(int const & L, int const & L_alphabet, vector< vector<do
     }
     //cout << "\n";
 };
+
+// Function to return energies < E_max
+
+void high_energy_filter(){
+    
+}
