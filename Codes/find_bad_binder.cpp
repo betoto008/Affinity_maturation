@@ -27,8 +27,6 @@ int main(int argc, char* argv[])
 	double T1 (.1) ; double T2 (2);
 	long long int n0 (0*L), d0 (10*L); //Number of steps: initial prelude, distance between sampling points
 	int N0[1] = {1E8};
-	int array1[9] = {8, 5, 6, 17, 14, 18, 9, 8, 17};
-	int array2[9] = {3, 3, 3, 3, 3, 7, 4, 3, 3};
 
 	
 	//------------ Energy Matrix ------------------------------------------------------
@@ -73,14 +71,10 @@ int main(int argc, char* argv[])
 	vector < int > Antigen_i;
 	Antigen_i.resize(L);
 
-	//---------------Initiating sequence with the Master sequence----------------------
+	//---------------Initiating the Master sequence----------------------
 	//Array with the current sequence
 	vector < int > master_sequence;
 	master_sequence.resize(L);
-
-	//Array with the current sequence
-	vector < int > complementary_sequence;
-	complementary_sequence.resize(L);
 	
 	double e = -50;
 	double e_new;
