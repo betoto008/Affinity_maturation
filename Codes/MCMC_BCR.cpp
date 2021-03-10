@@ -18,20 +18,21 @@
 using namespace std;
 
 //----------------------------------------------------------------------------------
-int main(int argc, char* argv[])
+int main(int argc, char* argv[]) //argv has 1:L , 2:N , 3:T
 {
-    string Text_files_path = "../../../../Dropbox/Research/Evolution_Immune_System/Text_files/";
+    string Text_files_path = "../../../../Dropbox/Research/Evolution_Immune_System/Text_files/MCMC/";
     cout<<">Running Monte Carlo simulation of the BCRs ..."<< endl;
     clock_t t1,t2;
     t1=clock();
     //-----------------------------------------------------------------------------
     //Parameters:
-    int L (12); //length of the sequence
+    int L  = atoi(argv[1]); //length of the sequence
     int L_alphabet (20); //length of the alphabet
-    int NT (1); //Number of runs
-    double T1 (.1) ; double T2 (.6); //range of temperatures
+    int NT (1); //Number of temperature runs
+    std::string T2_s (argv[3]);
+    double T1 (.1) ; double T2  = std::stod(T2_s); //range of temperatures
     long long int n0 (0*L), d0 (100*L); //Number of steps: initial prelude, distance between sampling points
-    int N0[1] = {1E8}; // Array with MCMC steps
+    long N0[1] = {atoi(argv[2])}; // Array with MCMC steps
 
     //------------Energy Matrix------------------------------------------------------
     vector < vector < double > > MJ;
@@ -100,7 +101,7 @@ int main(int argc, char* argv[])
         //Initiating Sequence with random sequence------------------------------------
         //for (int k= 0; k<L; k++)
         //{
-            //sequence[k] = randIX(1,L_alphabet);
+            //Sequence[k] = randIX(1,L_alphabet);
         //};
         //--------------------------------------------------------------------------------
 
@@ -113,10 +114,11 @@ int main(int argc, char* argv[])
 
         cout<< ">T= "<< T<< endl;
         
-        fout<< E << "\t"<<0.0 << "\t"<< 0 <<endl;
+        fout<< E <<endl;
         
-        //Starting the trajectory of the MCMCM:
+        // Starting the MCMCM trajectory:
         int countData (0); //Number of data point sampled in the trajectory
+        std::cout << "N= " << N0[kT] << std::endl;
         for (long long int k= 0; k < (N0[kT]*L); k++)
         {
             //Pick up a position and an aminoacid and calculate the energy difference if it were mutated
@@ -135,23 +137,21 @@ int main(int argc, char* argv[])
                     Sequence[pos]=aa;
                 }
             };
-            
-            //Calculate the observables starting after n0 steps: sample data points every d0 steps
+            //Calculate and print the observables starting after n0 steps: sample data points every d0 steps
             if (k>=n0)
             {
                 if ( (k%d0) == 0)
                 {
                     E= energy(L,L_alphabet,MJ,Sequence,Antigen);
-                    if (E<(E0+12)) {//if the energy is lower than E0+12
+                    //if (E<(E0+12)) {//if the energy is lower than E0+12
                         // print the energy value
-                        //fout<< E<< "\t"<< deltaE << "\t"<< aa <<endl;
                         fout<< E << endl;
-                    }
-                };
-            };
-        };
+                    //}
+                }
+            }
+        }
         
-        fout.close();
+        //fout.close();
     };
 
     //------------------------------------------------------------------------------
