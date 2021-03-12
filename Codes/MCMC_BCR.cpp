@@ -77,8 +77,8 @@ int main(int argc, char* argv[]) //argv has 1:L , 2:N , 3:T
     //---------Array with the Master Sequence--------------------------------------------
     vector < int > Master_Sequence;
     Master_Sequence.resize(L);
-    find_complementary(L, L_alphabet, MJ, Alphabet, Antigen, Master_Sequence);
-    double E0 = energy(L, L_alphabet, MJ, Master_Sequence, Antigen);
+    find_complementary(L, L_alphabet, MJ, Antigen, Master_Sequence);
+    double E0 = Energy(L, L_alphabet, MJ, Master_Sequence, Antigen);
     
     //---------Array with the current Sequence-------------------------------------------
     vector < int > Sequence;
@@ -92,7 +92,7 @@ int main(int argc, char* argv[]) //argv has 1:L , 2:N , 3:T
     
     //initialize current energy of the MCMC
     double E;
-    E= energy(L,L_alphabet,MJ,Sequence,Antigen);
+    E= Energy(L,L_alphabet,MJ,Sequence,Antigen);
     cout << E <<"\n";
     
     // For-loop over different temperatures
@@ -142,7 +142,7 @@ int main(int argc, char* argv[]) //argv has 1:L , 2:N , 3:T
             {
                 if ( (k%d0) == 0)
                 {
-                    E= energy(L,L_alphabet,MJ,Sequence,Antigen);
+                    E= Energy(L,L_alphabet,MJ,Sequence,Antigen);
                     //if (E<(E0+12)) {//if the energy is lower than E0+12
                         // print the energy value
                         fout<< E << endl;
@@ -151,7 +151,7 @@ int main(int argc, char* argv[]) //argv has 1:L , 2:N , 3:T
             }
         }
         
-        //fout.close();
+        fout.close();
     };
 
     //------------------------------------------------------------------------------

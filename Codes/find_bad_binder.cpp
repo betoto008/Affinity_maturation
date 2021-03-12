@@ -84,7 +84,7 @@ int main(int argc, char* argv[])
 			Antigen_i[k] = randIX(0,L_alphabet-1);
 		};
 
-		find_complementary(L, L_alphabet, MJ, Alphabet, Antigen_i, master_sequence);
+		find_complementary(L, L_alphabet, MJ, Antigen_i, master_sequence);
 		e_new = energy(L, L_alphabet, MJ, master_sequence, Antigen_i);
 
 		if(e_new>e){
@@ -92,7 +92,7 @@ int main(int argc, char* argv[])
 			Antigen = Antigen_i;
 		}
 	}
-    find_complementary(L, L_alphabet, MJ, Alphabet, Antigen, master_sequence);
+    find_complementary(L, L_alphabet, MJ, Antigen, master_sequence);
     
 	cout << "Antigen:";
 	for (int k= 0; k<L; k++){
