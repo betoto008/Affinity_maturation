@@ -1,8 +1,8 @@
 //
-//  Dynamics.cpp
+//  Dynamics_ensemble.cpp
 //  
 //
-//  Created by Roberto Moran Tovar on 12.03.21.
+//  Created by Roberto Moran Tovar on 13.03.21.
 //
 //Template to run a stochastic/deterministic simulation of the antigen and bcells dynamics.
 
@@ -33,7 +33,7 @@ void ODE(double beta, double nu, double gamma, long long NT, double dT, int n_na
 }
 
 //----------------------------------------------------------------------------------
-int main(int argc, char* argv[]) //argv has 1:L 2:N , 3:T , 4:T0 , 5:dT
+int main(int argc, char* argv[]) //argv has 1:L 2:N , 3:T , 4:T0 , 5:dT , 6:N_ensemble
 {
     string Text_files_path = "../../../../Dropbox/Research/Evolution_Immune_System/Text_files/Dynamics/";
     cout<<">Running simulation of the Bcells-Antigen dynamics ..."<< endl;
@@ -52,6 +52,7 @@ int main(int argc, char* argv[]) //argv has 1:L 2:N , 3:T , 4:T0 , 5:dT
     std::string dT_s (argv[5]);
     double dT = stod(dT_s); //time step
     long long int NT = (T-T0)/dT; //number of steps
+    long long int N_ensemble = atoi(argv[6]);
     long long A_0 = exp(beta*T0);
 
     //------------Energy Matrix------------------------------------------------------
@@ -107,55 +108,58 @@ int main(int argc, char* argv[]) //argv has 1:L 2:N , 3:T , 4:T0 , 5:dT
     //Array with Bcells
     vector < bcell > Bcells;
     Bcells.resize(N);
-    generate_Bcells(N, L, L_alphabet, Bcells);
-    //---------Choosing antigen-specific Bcells ---------------------------------------------------------
-    //Array with Naive-specific Bcells
-    vector < bcell* > Naive;
-    int n_naive = 0;
-    choose_naive_Bcells(N, L, L_alphabet, MJ, Antigen, Bcells, Naive, n_naive);
-    
-    //Matrix with the time series of the antigen-specific Bcells
-    vector<vector < long double > > Time_series_Bcells;
-    Time_series_Bcells.resize(n_naive);
-    for(int n= 0; n<n_naive; n++)
-    {
-        Time_series_Bcells[n].resize(NT);
-        Time_series_Bcells[n][0] = Naive[n]->cs;
-    };
-    
     
     //Array with time series of the antigen
     vector < long double > Time_series_Antigen;
     Time_series_Antigen.resize(NT);
-    Time_series_Antigen[0] = A_0;
-    
-    
-    cout << n_naive << endl;
     
     //Output files
-    ofstream fout (Text_files_path+"energies_L-"+std::to_string(L)+"_N-"+ std::to_string(N)+"_Antigen-"+Antigen_aa+".txt");
-    ofstream fout_antigen (Text_files_path+"antigen_L-"+std::to_string(L)+"_N-"+ std::to_string(N)+"_Antigen-"+Antigen_aa+".txt");
-    ofstream fout_bcells (Text_files_path+"bcells_L-"+std::to_string(L)+"_N-"+ std::to_string(N)+"_Antigen-"+Antigen_aa+".txt");
+    ofstream fout (Text_files_path+"energies_ensemble_L-"+std::to_string(L)+"_N-"+ std::to_string(N)+"_Antigen-"+Antigen_aa+".txt");
+    //ofstream fout_antigen (Text_files_path+"antigen_L-"+std::to_string(L)+"_N-"+ std::to_string(N)+"_Antigen-"+Antigen_aa+".txt");
+    ofstream fout_bcells (Text_files_path+"bcells_ensemble_L-"+std::to_string(L)+"_N-"+ std::to_string(N)+"_Antigen-"+Antigen_aa+".txt");
     
-    for (int n= 0; n<n_naive; n++)
-    {
-        fout << Naive[n]->e << endl;
-    };
-    
-    // Run ODE
-    ODE(beta, nu, gamma, NT, dT, n_naive, Naive, Time_series_Bcells, Time_series_Antigen);
-    
-    //Print time series of antigen and bcells
-    for(int t=0 ; t<NT; t++){
-        fout_antigen << Time_series_Antigen[t] << endl;
+    // Run ensemble of trajectories
+    for(int i_ensemble = 0 ; i_ensemble<N_ensemble ; i_ensemble++){
+        
+        //Generate bcells
+        generate_Bcells(N, L, L_alphabet, Bcells);
+        // Choose the antigen-specific bcells
+        vector < bcell* > Naive;
+        int n_naive = 0;
+        choose_naive_Bcells(N, L, L_alphabet, MJ, Antigen, Bcells, Naive, n_naive);
+        
+        //initialize time series arrays
+        Time_series_Antigen[0] = A_0;
+        
+        //Matrix with the time series of the antigen-specific Bcells
+        vector<vector < long double > > Time_series_Bcells;
+        Time_series_Bcells.resize(n_naive);
+        for(int n= 0; n<n_naive; n++)
+        {
+            Time_series_Bcells[n].resize(NT);
+            Time_series_Bcells[n][0] = Naive[n]->cs;
+        };
+        
+        ODE(beta, nu, gamma, NT, dT, n_naive, Naive, Time_series_Bcells, Time_series_Antigen);
+        
+        //print in file the energies and the activation state of the antigen-specific bcells.
+        for (int n= 0; n<n_naive; n++)
+        {
+            fout << Naive[n]->e << "\t" << Naive[n]->active << endl;
+        };
+        
+        //Print the final clone-size of bcells
         for (int n = 0 ; n<n_naive ; n++){
-            fout_bcells << Time_series_Bcells[n][t] << "\t";
+            if(Naive[n]->active==1){
+                fout_bcells << Time_series_Bcells[n][NT-1] << endl;
+            }
         }
-        fout_bcells << endl;
+            
     }
     
+    
     fout.close();
-    fout_antigen.close();
+    //fout_antigen.close();
     fout_bcells.close();
     cout<< ">Simulation completed…"<< endl;
     t2= clock();

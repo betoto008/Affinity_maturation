@@ -24,6 +24,8 @@
 //double randX(min,max): a random number between min and max
 //int randIX(min,max): an integer random number between min and max
 
+const long double N_A = 6.02214076E23;
+
 using namespace std;
 
 // ---------------- CLASSES ----------------
