@@ -36,7 +36,7 @@ public:
     bcell();
     bcell(int const & L, int const & L_alphabet, vector< int > & seq);
     double e; //energy with respect to the current epitope.
-    int cs;
+    double cs;
     bool active;
 };
 bcell::bcell(){
@@ -44,7 +44,7 @@ bcell::bcell(){
 }
 bcell::bcell(int const & L, int const & L_alphabet, vector< int > & seq){
     this->seq = seq;
-    cs = 1;
+    cs = 1.0;
     active = 0;
     
 }

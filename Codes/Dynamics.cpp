@@ -14,19 +14,26 @@
 using namespace std;
 
 // Function to run de set of differential equations
-void ODE(double beta, double nu, double gamma, long long NT, double dT, int n_naive, vector<bcell*> & Naive, vector<vector < long double > > & Time_series_Bcells, vector < long double > & Time_series_Antigen){
+void ODE(double const beta, double const nu, double const gamma, long long NT, double dT, int n_naive, vector<bcell*> & Naive, vector<vector < long double > > & Time_series_Bcells, vector < long double > & Time_series_Antigen){
+    double N_active = 0;
+    double f = 0;
     for(int t = 1; t< NT ; t++){ // for loop of time
         //Update the antigen
-        Time_series_Antigen[t] = Time_series_Antigen[t-1] + (beta*Time_series_Antigen[t-1])*dT;
+        Time_series_Antigen[t] = Time_series_Antigen[t-1] + (beta*Time_series_Antigen[t-1] - gamma*Time_series_Antigen[t-1]*N_active)*dT;
         if(Time_series_Antigen[t]<1){
             Time_series_Antigen[t] = 0;
         }
+        N_active = 0;
         //Update Bcells
         for(int n = 0 ; n<n_naive ; n++){
             Time_series_Bcells[n][t] = Time_series_Bcells[n][t-1] + (nu*Time_series_Bcells[n][t-1])*dT*(Naive[n]->active);
-            double f = (Time_series_Antigen[t]/N_A)/((Time_series_Antigen[t]/N_A) + exp(20+Naive[n]->e));
-            if(f>0.5){
-                Naive[n]->active = 1;
+            if(Naive[n]->active ==0){
+                f = (Time_series_Antigen[t]/N_A)/((Time_series_Antigen[t]/N_A) + exp(20+Naive[n]->e));
+                if(f>0.5){
+                    Naive[n]->active = 1;
+                }
+            }else{
+                N_active = N_active + Time_series_Bcells[n][t];
             }
         }
     }
@@ -42,8 +49,8 @@ int main(int argc, char* argv[]) //argv has 1:L 2:N , 3:T , 4:T0 , 5:dT
     //-----------------------------------------------------------------------------
     //Parameters:
     double beta = 2;
-    double nu = 4;
-    double gamma = 1;
+    double nu = 2;
+    double gamma = 2;
     int L  = atoi(argv[1]); //length of the sequence
     int L_alphabet (20); //length of the alphabet
     long long int N = atoi(argv[2]); // number of bcells
@@ -91,17 +98,6 @@ int main(int argc, char* argv[]) //argv has 1:L 2:N , 3:T , 4:T0 , 5:dT
     vector < int > Antigen;
     Antigen.resize(L);
     aa_to_positions(L, L_alphabet, Alphabet, Antigen, Antigen_aa);
-    
-    //---------Array with the current Sequence-------------------------------------------
-    vector < int > Sequence;
-    Sequence.resize(L);
-    //Initiating Sequence with random sequence
-    for (int k= 0; k<L; k++)
-    {
-        Sequence[k] = randIX(0,L_alphabet-1);
-        cout << Alphabet[Sequence[k]];
-    };
-    cout << "\n";
     
     //---------Generating Bcells ---------------------------------------------------------
     //Array with Bcells
