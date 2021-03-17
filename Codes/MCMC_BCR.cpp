@@ -28,11 +28,14 @@ int main(int argc, char* argv[]) //argv has 1:L , 2:N , 3:T
     //Parameters:
     int L  = atoi(argv[1]); //length of the sequence
     int L_alphabet (20); //length of the alphabet
-    int NT (1); //Number of temperature runs
-    std::string T2_s (argv[3]);
-    double T1 (.1) ; double T2  = std::stod(T2_s); //range of temperatures
+    int NT = 5; //Number of temperature runs
+    int NN = 4; //Number of iteration sizes
+    //std::string T2_s (argv[3]);
+    //double T1 (.1) ; double T2  = std::stod(T2_s); //range of temperatures
     long long int n0 (0*L), d0 (100*L); //Number of steps: initial prelude, distance between sampling points
-    long N0[1] = {atoi(argv[2])}; // Array with MCMC steps
+    long long int Ns [4] = {1E5, 1E6, 1E7, 1E8}; // Array with MCMC steps
+    double Temperatures [5] = {0.1, 0.2, 0.5, 1.0, 1.5};// Array with MCMC temperatures
+ 
 
     //------------Energy Matrix------------------------------------------------------
     vector < vector < double > > MJ;
@@ -83,7 +86,8 @@ int main(int argc, char* argv[]) //argv has 1:L , 2:N , 3:T
     //---------Array with the current Sequence-------------------------------------------
     vector < int > Sequence;
     Sequence.resize(L);
-    Sequence = Master_Sequence;
+    
+    cout << "Master sequence: ";
     for (int k= 0; k<L; k++)
     {
         cout << Alphabet[Master_Sequence[k]];
@@ -92,66 +96,67 @@ int main(int argc, char* argv[]) //argv has 1:L , 2:N , 3:T
     
     //initialize current energy of the MCMC
     double E;
-    E= Energy(L,L_alphabet,MJ,Sequence,Antigen);
-    cout << E <<"\n";
     
     // For-loop over different temperatures
     for (int kT = 0; kT<NT; kT++)
     {
-        //Initiating Sequence with random sequence------------------------------------
-        //for (int k= 0; k<L; k++)
-        //{
-            //Sequence[k] = randIX(1,L_alphabet);
-        //};
-        //--------------------------------------------------------------------------------
+        for (int kN = 0 ; kN < NN ; kN ++ ){
+            //Initiating Sequence with MS------------------------------------
+            Sequence = Master_Sequence;
+            E = Energy(L,L_alphabet,MJ, Master_Sequence , Antigen);
+            cout << "E_0 = " << E <<"\n";
+            
+            // Set the temperature and sampling size
+            //double T (T2-(T2-T1)*double(kT)/double(nT-1));
+            double T = Temperatures[kT];
+            long long int N = Ns[kN];
+            
+            //Output file
+            ofstream fout (Text_files_path+"energies_L-"+std::to_string(L)+"_T-"+std::to_string(T)+"_N-"+ std::to_string(N)+"_Antigen-"+Antigen_aa+".txt");
 
-        // Set the temperature
-        //double T (T2-(T2-T1)*double(kT)/double(nT-1));
-        double T = T2;
-
-        //Output file
-        ofstream fout (Text_files_path+"output_L-"+std::to_string(L)+"_T-"+std::to_string(T)+"_N-"+ std::to_string(N0[kT])+"_Antigen-"+Antigen_aa+".txt");
-
-        cout<< ">T= "<< T<< endl;
-        
-        fout<< E <<endl;
-        
-        // Starting the MCMCM trajectory:
-        int countData (0); //Number of data point sampled in the trajectory
-        std::cout << "N= " << N0[kT] << std::endl;
-        for (long long int k= 0; k < (N0[kT]*L); k++)
-        {
-            //Pick up a position and an aminoacid and calculate the energy difference if it were mutated
-              int pos = randIX(0,L-1);
-              int aa = randIX(0,L_alphabet-1);
-              
-              double deltaE = delt(L, L_alphabet, MJ, Sequence, Antigen, pos, aa);
-
-            //Decide whether to actually mutate the sequence: (Metropolis' algorithm)
-            if (deltaE<0){
-                Sequence[pos] = aa;
-            }
-            else{
-                double rand = randX(0,1);
-                if(rand < exp((-1*deltaE)/T)){
-                    Sequence[pos]=aa;
-                }
-            };
-            //Calculate and print the observables starting after n0 steps: sample data points every d0 steps
-            if (k>=n0)
+            cout<< ">T= "<< T<< endl;
+            cout << "N= " << N << endl;
+            
+            fout<< E <<endl;
+            
+            // Starting the MCMC trajectory:
+            int countData (0); //Number of data point sampled in the trajectory
+            
+            for (long long int k= 0; k < (N*L); k++)
             {
-                if ( (k%d0) == 0)
+                //Pick up a position and an aminoacid and calculate the energy difference if it were mutated
+                  int pos = randIX(0,L-1);
+                  int aa = randIX(0,L_alphabet-1);
+                  
+                  double deltaE = delt(L, L_alphabet, MJ, Sequence, Antigen, pos, aa);
+
+                //Decide whether to actually mutate the sequence: (Metropolis' algorithm)
+                if (deltaE<0){ // Perform the mutation
+                    Sequence[pos] = aa;
+                }
+                else{ // perform the mutation with probability exp(-deltaE/T)
+                    double rand = randX(0,1);
+                    if(rand < exp((-1*deltaE)/T)){
+                        Sequence[pos]=aa;
+                    }
+                };
+                //Calculate and print the observables starting after n0 steps: sample data points every d0 steps
+                if (k>=n0)
                 {
-                    E= Energy(L,L_alphabet,MJ,Sequence,Antigen);
-                    //if (E<(E0+12)) {//if the energy is lower than E0+12
-                        // print the energy value
-                        fout<< E << endl;
-                    //}
+                    if ( (k%d0) == 0)
+                    {
+                        E= Energy(L,L_alphabet,MJ,Sequence,Antigen);
+                        //if (E<(E0+12)) {//if the energy is lower than E0+12
+                            // print the energy value
+                            fout<< E << endl;
+                        //}
+                    }
                 }
             }
+            
+            fout.close();
         }
         
-        fout.close();
     };
 
     //------------------------------------------------------------------------------

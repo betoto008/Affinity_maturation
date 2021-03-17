@@ -44,7 +44,7 @@ void ODE(double const beta, double const nu, double const gamma, long long NT, d
 }
 
 //----------------------------------------------------------------------------------
-int main(int argc, char* argv[]) //argv has 1:L 2:N , 3:T , 4:T0 , 5:beta , 6:nu , 7:gamma , 8:N_ensemble
+int main(int argc, char* argv[]) //argv has 1:L , 2:N , 3:T , 4:T0 , 5:beta , 6:nu , 7:gamma , 8:N_ensemble
 {
     string Text_files_path = "../../../../Dropbox/Research/Evolution_Immune_System/Text_files/Dynamics/Ensemble/";
     cout<<">Running simulation of the Bcells-Antigen dynamics ..."<< endl;
