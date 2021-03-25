@@ -63,7 +63,7 @@ int main(int argc, char* argv[]) //argv has 1:L , 2:N , 3:T , 4:T0 , 5:beta , 6:
     long long int N = atoi(argv[2]); // number of bcells
     int T = atoi(argv[3]); //number of days for the simulation
     int T0 = atoi(argv[4]); //number of days for the simulation
-    double dT = 0.001; //time step
+    double dT = 0.01; //time step
     long long int NT = (T-T0)/dT; //number of steps
     long long int N_ensemble = atoi(argv[8]);
     long long A_0 = exp(beta*T0);
