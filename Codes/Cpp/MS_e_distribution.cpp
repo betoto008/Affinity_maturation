@@ -1,13 +1,11 @@
-//Template to find good binder.
-//Input: (all parameters are already set internally!)
+//
+//  MS_e_distribution.cpp
+//  
+//  Template to find the distribution of MSs
+//  Created by Roberto Moran Tovar on 02.03.21.
+//
 
-#include "./lib/Immuno_functions.hpp"
-
-//Library for random number generators
-#include "./lib/random.cpp"
-//There are two functions extracted from the library
-//double randX(min,max): a random number between min and max
-//int randIX(min,max): an integer random number between min and max
+#include "../lib/Immuno_functions.hpp"
 
 //----------------------------------------------------------------------------------
 using namespace std;
@@ -15,7 +13,7 @@ using namespace std;
 //----------------------------------------------------------------------------------
 int main(int argc, char* argv[])
 {
-    string Text_files_path = "../../../../Dropbox/Research/Evolution_Immune_System/Text_files/";
+    string Text_files_path = "../../../../../Dropbox/Research/Evolution_Immune_System/Text_files/";
     cout<<">Running Monte Carlo simulation of the BCRs ...\n"<< endl;
     clock_t t1,t2;
     t1=clock();
@@ -25,9 +23,9 @@ int main(int argc, char* argv[])
     int L_alphabet (20);
     int nT (1); //Number of temperature points
     double T1 (.1) ; double T2 (2);
-    long long int n0 (0*L), d0 (10*L); //Number of steps: initial prelude, distance between sampling points
-    int N0[1] = {1E8};
-
+    int N0;
+    sscanf(argv[1], "%d", &N0);
+    std::cout << "N=" << N0 << std::endl;
     
     //------------ Energy Matrix ------------------------------------------------------
     //MJ Matrix
@@ -38,7 +36,7 @@ int main(int argc, char* argv[])
         (MJ[k]).resize(L_alphabet);
     };
 
-    ifstream file("MJ2.txt");
+    ifstream file("../Input_files/MJ2.txt");
 
     for (unsigned int i = 0; i < L_alphabet; i++) {
         for (unsigned int j = 0; j < L_alphabet; j++) {
@@ -50,16 +48,14 @@ int main(int argc, char* argv[])
     //Array with the Alphabet
     vector < string > Alphabet;
     Alphabet.resize(L_alphabet);
-    ifstream file2("Alphabet.txt");
+    ifstream file2("../Input_files/Alphabet.txt");
     //cout << "The Alphabet is :";
 
     for (int k = 0; k < L_alphabet; k++) {
 
         file2 >> Alphabet[k];
-        //cout << Alphabet[k] ;
     
     }
-    //cout << "\n";
 
     //------------- Initiating Antigen ------------------------------------------------
     //Array with the antigen
@@ -68,43 +64,28 @@ int main(int argc, char* argv[])
     for (int k= 0; k<L; k++){
         Antigen[k] = randIX(0,L_alphabet-1);
     };
-    vector < int > Antigen_i;
-    Antigen_i.resize(L);
 
     //---------------Initiating the Master sequence----------------------
     //Array with the current sequence
     vector < int > master_sequence;
     master_sequence.resize(L);
+
+    double e;
     
-    double e = 0;
-    double e_new;
-    for(int i = 0; i<1E5 ; i++){
+    //Output file
+    ofstream fout (Text_files_path+"MS_energies_L-"+std::to_string(L)+"_N-"+ std::to_string(N0)+".txt");
+    
+    for(int i = 0; i<N0 ; i++){
 
         for (int k= 0; k<L; k++){
-            Antigen_i[k] = randIX(0,L_alphabet-1);
+            Antigen[k] = randIX(0,L_alphabet-1);
         };
 
-        find_complementary(L, L_alphabet, MJ,  Antigen_i, master_sequence);
-        e_new = energy(L, L_alphabet, MJ, master_sequence, Antigen_i);
-
-        if(e_new<e){
-            e = e_new;
-            Antigen = Antigen_i;
-        }
+        find_complementary(L, L_alphabet, MJ, Alphabet, Antigen, master_sequence);
+        e = energy(L, L_alphabet, MJ, master_sequence, Antigen);
+        fout << e << std::endl;
     }
-    find_complementary(L, L_alphabet, MJ, Antigen, master_sequence);
-    
-    cout << "Antigen:";
-    for (int k= 0; k<L; k++){
-        cout << Alphabet[Antigen[k]];
-    };
-    cout << "\n";
-    cout << "Master Sequence:";
-    for (int k= 0; k<L; k++){
-        cout << Alphabet[master_sequence[k]];
-    };
-    cout << "\n";
-    cout << "Binding energy:"<< e << "\n";
+    fout.close();
     
     //------------------------------------------------------------------------------
     cout<< ">Simulation completed…"<< endl;

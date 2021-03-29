@@ -122,8 +122,8 @@ void generate_Bcells(int N, int L, int L_alphabet, vector<bcell> & Bcells){
         Bcells[n]  = bcell_i;
     }
 }
-// Function that selects the antigen-specific naive Bcells from all the sequences
 
+// Function that selects the antigen-specific naive Bcells from all the sequences
 void choose_naive_Bcells(int N, int L, int L_alphabet, vector< vector<double> > const & MJ, vector< int > const & Antigen, vector<bcell> & Bcells, vector<bcell*> & Naive, int & n_naive){
     
     vector <int> MS;
@@ -140,8 +140,15 @@ void choose_naive_Bcells(int N, int L, int L_alphabet, vector< vector<double> > 
         }
     }
 }
-    
 
+//Function that mutates any sequences in one random position
+void mutate_sequence(int L, int L_alphabet, vector< int > & sequence){
+    int pos = randIX(0,L-1);
+    int aa = randIX(0,L_alphabet-1);
+    if(sequence[pos] != aa){
+        sequence[pos]=aa;
+    }
+}
 
 
 

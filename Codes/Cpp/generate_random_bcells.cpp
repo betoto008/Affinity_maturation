@@ -6,7 +6,7 @@
 //
 //
 
-#include "./lib/Immuno_functions.hpp"
+#include "../lib/Immuno_functions.hpp"
 
 #include <stdio.h>
 
@@ -14,9 +14,9 @@
 using namespace std;
 
 //----------------------------------------------------------------------------------
-int main(int argc, char* argv[]) //argv has 1:L 2:N , 3:N_ensemble
+int main(int argc, char* argv[]) //argv has 1:L , 2:N , 3:N_ensemble
 {
-    string Text_files_path = "../../../../Dropbox/Research/Evolution_Immune_System/Text_files/Random/";
+    string Text_files_path = "../../../../../Dropbox/Research/Evolution_Immune_System/Text_files/Random/";
     cout<<">Running simulation of the Bcells-Antigen dynamics ..."<< endl;
     clock_t t1,t2;
     t1=clock();
@@ -36,13 +36,13 @@ int main(int argc, char* argv[]) //argv has 1:L 2:N , 3:N_ensemble
         (MJ[k]).resize(L_alphabet);
     };
 
-    ifstream file("MJ2.txt");
+    ifstream file("../Input_files/MJ2.txt");
 
     //------------ Alphabet ----------------------------------------------------------
     //Array with the Alphabet
     vector < string > Alphabet;
     Alphabet.resize(L_alphabet);
-    ifstream file2("Alphabet.txt");
+    ifstream file2("../Input_files/Alphabet.txt");
     cout << "The Alphabet is :";
     for (int k = 0; k < L_alphabet; k++) {
 

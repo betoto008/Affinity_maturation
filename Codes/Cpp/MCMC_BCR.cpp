@@ -6,13 +6,7 @@
 //Template to run a Monte Carlo simulation for the BCRs.
 //Input: (all parameters are already set internally!)
 
-#include "./lib/Immuno_functions.hpp"
-
-//Library for random number generators
-#include "./lib/random.cpp"
-//There are two functions extracted from the library
-//double randX(min,max): a random number between min and max
-//int randIX(min,max): an integer random number between min and max
+#include "../lib/Immuno_functions.hpp"
 
 //----------------------------------------------------------------------------------
 using namespace std;
@@ -20,7 +14,7 @@ using namespace std;
 //----------------------------------------------------------------------------------
 int main(int argc, char* argv[]) //argv has 1:L , 2:N , 3:T
 {
-    string Text_files_path = "../../../../Dropbox/Research/Evolution_Immune_System/Text_files/MCMC/";
+    string Text_files_path = "../../../../../Dropbox/Research/Evolution_Immune_System/Text_files/MCMC/";
     cout<<">Running Monte Carlo simulation of the BCRs ..."<< endl;
     clock_t t1,t2;
     t1=clock();
@@ -45,13 +39,13 @@ int main(int argc, char* argv[]) //argv has 1:L , 2:N , 3:T
         (MJ[k]).resize(L_alphabet);
     };
 
-    ifstream file("MJ2.txt");
+    ifstream file("../Input_files/MJ2.txt");
 
     //------------ Alphabet ----------------------------------------------------------
     //Array with the Alphabet
     vector < string > Alphabet;
     Alphabet.resize(L_alphabet);
-    ifstream file2("Alphabet.txt");
+    ifstream file2("../Input_files/Alphabet.txt");
     cout << "The Alphabet is :";
     for (int k = 0; k < L_alphabet; k++) {
 
