@@ -133,7 +133,7 @@ void choose_naive_Bcells(int N, int L, int L_alphabet, vector< vector<double> > 
     double e;
     for(int n = 0 ; n<N ; n++){
         e = Energy(L, L_alphabet, MJ, Bcells[n].seq, Antigen);
-        if(e<e_MS+12){
+        if(e<e_MS+25){
             Bcells[n].e = e;
             Naive.push_back( &Bcells[n]);
             n_naive++;

@@ -14,17 +14,17 @@ using namespace std;
 int main(int argc, char* argv[])
 {
     string Text_files_path = "../../../../../Dropbox/Research/Evolution_Immune_System/Text_files/";
-    cout<<">Running Monte Carlo simulation of the BCRs ...\n"<< endl;
+    cout<<">Generating master sequences ...\n"<< endl;
     clock_t t1,t2;
     t1=clock();
     //-----------------------------------------------------------------------------
     //Parameters: (they are fine as they are)
-    int L (12); //length of the sequence
+    int L  = atoi(argv[1]); //length of the sequence
     int L_alphabet (20);
     int nT (1); //Number of temperature points
     double T1 (.1) ; double T2 (2);
     int N0;
-    sscanf(argv[1], "%d", &N0);
+    sscanf(argv[2], "%d", &N0);
     std::cout << "N=" << N0 << std::endl;
     
     //------------ Energy Matrix ------------------------------------------------------
@@ -81,8 +81,8 @@ int main(int argc, char* argv[])
             Antigen[k] = randIX(0,L_alphabet-1);
         };
 
-        find_complementary(L, L_alphabet, MJ, Alphabet, Antigen, master_sequence);
-        e = energy(L, L_alphabet, MJ, master_sequence, Antigen);
+        find_complementary(L, L_alphabet, MJ, Antigen, master_sequence);
+        e = Energy(L, L_alphabet, MJ, master_sequence, Antigen);
         fout << e << std::endl;
     }
     fout.close();

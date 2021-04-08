@@ -10,12 +10,12 @@ using namespace std;
 int main(int argc, char* argv[])
 {
     string Text_files_path = "../../../../../Dropbox/Research/Evolution_Immune_System/Text_files/";
-    cout<<">Running Monte Carlo simulation of the BCRs ...\n"<< endl;
+    cout<<">Finding a good antigen ...\n"<< endl;
     clock_t t1,t2;
     t1=clock();
     //-----------------------------------------------------------------------------
     //Parameters: (they are fine as they are)
-    int L (12); //length of the sequence
+    int L  = atoi(argv[1]); //length of the sequence
     int L_alphabet (20);
     int nT (1); //Number of temperature points
     double T1 (.1) ; double T2 (2);
@@ -79,7 +79,7 @@ int main(int argc, char* argv[])
         };
 
         find_complementary(L, L_alphabet, MJ,  Antigen_i, master_sequence);
-        e_new = energy(L, L_alphabet, MJ, master_sequence, Antigen_i);
+        e_new = Energy(L, L_alphabet, MJ, master_sequence, Antigen_i);
 
         if(e_new<e){
             e = e_new;

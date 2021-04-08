@@ -109,7 +109,7 @@ int main(int argc, char* argv[]) //argv has 1:L , 2:N , 3:T
             ofstream fout (Text_files_path+"energies_L-"+std::to_string(L)+"_T-"+std::to_string(T)+"_N-"+ std::to_string(N)+"_Antigen-"+Antigen_aa+".txt");
 
             cout<< ">T= "<< T<< endl;
-            cout << "N= " << N << endl;
+            cout << ">N= " << N << endl;
             
             fout<< E <<endl;
             
