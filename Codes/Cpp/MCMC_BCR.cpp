@@ -12,7 +12,7 @@
 using namespace std;
 
 //----------------------------------------------------------------------------------
-int main(int argc, char* argv[]) //argv has 1:L , 2:N , 3:T
+int main(int argc, char* argv[]) //argv has 1:L
 {
     string Text_files_path = "../../../../../Dropbox/Research/Evolution_Immune_System/Text_files/MCMC/";
     cout<<">Running Monte Carlo simulation of the BCRs ..."<< endl;
@@ -22,13 +22,13 @@ int main(int argc, char* argv[]) //argv has 1:L , 2:N , 3:T
     //Parameters:
     int L  = atoi(argv[1]); //length of the sequence
     int L_alphabet (20); //length of the alphabet
-    int NT = 5; //Number of temperature runs
-    int NN = 4; //Number of iteration sizes
+    int NT = 3; //Number of temperature runs
+    int NN = 1; //Number of iteration sizes
     //std::string T2_s (argv[3]);
     //double T1 (.1) ; double T2  = std::stod(T2_s); //range of temperatures
     long long int n0 (0*L), d0 (100*L); //Number of steps: initial prelude, distance between sampling points
-    long long int Ns [4] = {1E5, 1E6, 1E7, 1E8}; // Array with MCMC steps
-    double Temperatures [5] = {0.1, 0.2, 0.5, 1.0, 1.5};// Array with MCMC temperatures
+    long long int Ns [1] = {1E8}; // Array with MCMC steps
+    double Temperatures [3] = {0.1, 0.5, 0.8};// Array with MCMC temperatures
  
 
     //------------Energy Matrix------------------------------------------------------
