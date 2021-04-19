@@ -26,8 +26,8 @@ int main(int argc, char* argv[]) //argv has 1:L
     int NN = 1; //Number of iteration sizes
     //std::string T2_s (argv[3]);
     //double T1 (.1) ; double T2  = std::stod(T2_s); //range of temperatures
-    long long int n0 (0*L), d0 (100*L); //Number of steps: initial prelude, distance between sampling points
-    long long int Ns [1] = {1E8}; // Array with MCMC steps
+    long long int n0 (0*L), d0 (1); //Number of steps: initial prelude, distance between sampling points
+    long long int Ns [1] = {1e7}; // Array with MCMC steps
     double Temperatures [3] = {0.1, 0.5, 0.8};// Array with MCMC temperatures
  
 
@@ -116,7 +116,7 @@ int main(int argc, char* argv[]) //argv has 1:L
             // Starting the MCMC trajectory:
             int countData (0); //Number of data point sampled in the trajectory
             
-            for (long long int k= 0; k < (N*L); k++)
+            for (long long int k= 0; k < (N); k++)
             {
                 //Pick up a position and an aminoacid and calculate the energy difference if it were mutated
                   int pos = randIX(0,L-1);
