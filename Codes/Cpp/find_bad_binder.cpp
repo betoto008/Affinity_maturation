@@ -70,9 +70,9 @@ int main(int argc, char* argv[])
 	vector < int > master_sequence;
 	master_sequence.resize(L);
 	
-	double e = -50;
+	double e = -80;
 	double e_new;
-	for(int i = 0; i<1 ; i++){
+	for(int i = 0; i<1E5 ; i++){
 
 		for (int k= 0; k<L; k++){
 			Antigen_i[k] = randIX(0,L_alphabet-1);

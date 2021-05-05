@@ -37,6 +37,8 @@ public:
     bcell(int const & L, int const & L_alphabet, vector< int > & seq);
     double e; //energy with respect to the current epitope.
     double cs;
+    bool plasma;
+    bool GC;
     bool active;
 };
 bcell::bcell(){
@@ -45,6 +47,8 @@ bcell::bcell(){
 bcell::bcell(int const & L, int const & L_alphabet, vector< int > & seq){
     this->seq = seq;
     cs = 1.0;
+    plasma = 0;
+    GC = 0;
     active = 0;
     
 }
@@ -133,7 +137,7 @@ void choose_naive_Bcells(int N, int L, int L_alphabet, vector< vector<double> > 
     double e;
     for(int n = 0 ; n<N ; n++){
         e = Energy(L, L_alphabet, MJ, Bcells[n].seq, Antigen);
-        if(e<e_MS+25){
+        if(e<e_MS+28){
             Bcells[n].e = e;
             Naive.push_back( &Bcells[n]);
             n_naive++;
