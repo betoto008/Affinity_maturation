@@ -23,7 +23,7 @@ int main(int argc, char* argv[]) //argv has
     int L  = atoi(argv[1]); //length of the sequence
     int L_alphabet (20); //length of the alphabet
     long long int N_ensemble = atoi(argv[2]); // Ensemble size
-    long long int T = 100; //Random walk time
+    long long int T = 1000; //Random walk time
     
     //------------Energy Matrix------------------------------------------------------
     vector < vector < double > > MJ;
