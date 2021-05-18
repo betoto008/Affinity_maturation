@@ -17,6 +17,12 @@
 #include <vector>
 #include <cmath>
 #include <time.h>
+#include <gsl/gsl_math.h>
+#include <gsl/gsl_randist.h>
+#include <gsl/gsl_rng.h>
+
+
+
 
 //Library for random number generators
 #include "./random.cpp"
@@ -56,14 +62,22 @@ bcell::bcell(int const & L, int const & L_alphabet, vector< int > & seq){
 // ---------------- FUNCTION ---------------
 
 //Function to calculate the energy: Implement the Energy Matrix
-double Energy(int const & L, int const & L_alphabet, vector< vector<double> > const & MJ, vector< int > const & sequence, vector< int > const & Antigen)
+double Energy(int const & L, int const & L_alphabet, vector< vector<double> > const & MJ, vector< int > const & sequence, vector< int > const & Antigen, string type, gsl_rng *r)
 {
-    double E (0.);
 
-    for(int i=0; i<L ; i++){
-        E = E + MJ[Antigen[i]][sequence[i]];
+    double E = 0.0;
+    if (type == "MJ") {
+        for(int i=0; i<L ; i++){
+            E = E + MJ[Antigen[i]][sequence[i]];
+        }
+    }else if(type == "Random"){
+        E = -56.0;
+        for(int i=0; i<L ; i++){
+            E = E + gsl_ran_gaussian(r, 1.17);
+        }
     }
     return E;
+
 };
 
 //Function to calculate the energy difference due to a mutation
@@ -128,15 +142,15 @@ void generate_Bcells(int N, int L, int L_alphabet, vector<bcell> & Bcells){
 }
 
 // Function that selects the antigen-specific naive Bcells from all the sequences
-void choose_naive_Bcells(int N, int L, int L_alphabet, vector< vector<double> > const & MJ, vector< int > const & Antigen, vector<bcell> & Bcells, vector<bcell*> & Naive, int & n_naive){
+void choose_naive_Bcells(int N, int L, int L_alphabet, vector< vector<double> > const & MJ, vector< int > const & Antigen, vector<bcell> & Bcells, vector<bcell*> & Naive, int & n_naive, string type, gsl_rng *r){
     
     vector <int> MS;
     MS.resize(L);
     find_complementary(L, L_alphabet, MJ, Antigen, MS);
-    double e_MS = Energy(L, L_alphabet, MJ, MS, Antigen);
+    double e_MS = Energy(L, L_alphabet, MJ, MS, Antigen, "MJ", r);
     double e;
     for(int n = 0 ; n<N ; n++){
-        e = Energy(L, L_alphabet, MJ, Bcells[n].seq, Antigen);
+        e = Energy(L, L_alphabet, MJ, Bcells[n].seq, Antigen, type, r);
         if(e<e_MS+28){
             Bcells[n].e = e;
             Naive.push_back( &Bcells[n]);
@@ -154,5 +168,142 @@ void mutate_sequence(int L, int L_alphabet, vector< int > & sequence){
     }
 }
 
+// Function to run de set of differential equations
+void ODE(int linear, double const eta, double const nu, double const gamma, long long NT, double dT, int n_naive, vector<bcell*> & Naive, vector<vector < long double > > & Time_series_Bcells, vector < long double > & Time_series_Antigen, vector < int > & N_active_linages){
+    double p_GC = 0.15;
+    double f = 0;
+    double N_active_bcells = 0;
+    int n_active_linages = 0;
+    if (linear==0) {
+        for(int t = 1; t< NT ; t++){ // for loop of time
+            //Update the antigen
+            Time_series_Antigen[t] = Time_series_Antigen[t-1] + (eta*Time_series_Antigen[t-1] - gamma*Time_series_Antigen[t-1]*N_active_bcells)*dT;
+            if(Time_series_Antigen[t]<1){
+                Time_series_Antigen[t] = 0;
+            }
+            N_active_bcells = 0;
+            //Update Bcells
+            for(int n = 0 ; n<n_naive ; n++){
+                Time_series_Bcells[n][t] = Time_series_Bcells[n][t-1] + (nu*Time_series_Bcells[n][t-1])*dT*(Naive[n]->active);
+                if(Naive[n]->active ==0){
+                    f = (Time_series_Antigen[t]/N_A)/((Time_series_Antigen[t]/N_A) + exp(25+Naive[n]->e));
+                    if(f>0.5){
+                        Naive[n]->active = 1;
+                        n_active_linages++;
+                        double r_GC = randX(0,1);
+                        // Decide if the activated linage will have plasma or GC fate.
+                        if(r_GC<p_GC){
+                            Naive[n]->GC = 1;
+                        }
+                        else{
+                            Naive[n]->plasma = 1;
+                        }
+                    }
+                }else{
+                    N_active_bcells = N_active_bcells + Time_series_Bcells[n][t];
+                }
+            }
+            N_active_linages[t] = N_active_linages[t] + n_active_linages;
+        }
+    } else {
+        for(int t = 1; t< NT ; t++){ // for loop of time
+            //Update the antigen
+            Time_series_Antigen[t] = Time_series_Antigen[t-1] + (eta*2000 - gamma*Time_series_Antigen[t-1]*N_active_bcells)*dT;
+            if(Time_series_Antigen[t]<1){
+                Time_series_Antigen[t] = 0;
+            }
+            N_active_bcells = 0;
+            //Update Bcells
+            for(int n = 0 ; n<n_naive ; n++){
+                Time_series_Bcells[n][t] = Time_series_Bcells[n][t-1] + (nu*Time_series_Bcells[n][t-1])*dT*(Naive[n]->active);
+                if(Naive[n]->active ==0){
+                    f = (Time_series_Antigen[t]/N_A)/((Time_series_Antigen[t]/N_A) + exp(25+Naive[n]->e));
+                    if(f>0.5){
+                        Naive[n]->active = 1;
+                        n_active_linages++;
+                        double r_GC = randX(0,1);
+                        // Decide if the activated linage will have plasma or GC fate.
+                        if(r_GC<p_GC){
+                            Naive[n]->GC = 1;
+                        }
+                        else{
+                            Naive[n]->plasma = 1;
+                        }
+                    }
+                }else{
+                    N_active_bcells = N_active_bcells + Time_series_Bcells[n][t];
+                }
+            }
+            N_active_linages[t] = N_active_linages[t] + n_active_linages;
+        }
+    }
+    
+}
+
+// Function to run de set of differential equations
+void ODE_ensemble(int linear, double const eta, double const nu, double const gamma, long long NT, double dT, int n_naive, vector<bcell*> & Naive, vector < long double > & Time_series_Antigen, vector < double > & N_active_linages, vector <double> & N_final_active_linages){
+    double f = 0;
+    double N_active_bcells = 0;
+    int n_active_linages_t = 0;
+    int n_active_linages = 0;
+    if (linear==0) {
+        for(int t = 1; t< NT ; t++){ // for loop of time
+            //Update the antigen
+            Time_series_Antigen[t] = Time_series_Antigen[t-1] + (eta*Time_series_Antigen[t-1] - gamma*Time_series_Antigen[t-1]*N_active_bcells)*dT;
+            if(Time_series_Antigen[t]<1){
+                Time_series_Antigen[t] = 0;
+            }
+            N_active_bcells = 0;
+            n_active_linages_t = 0;
+            //Update Bcells
+            for(int n = 0 ; n<n_naive ; n++){
+                Naive[n]->cs = Naive[n]->cs + (nu*Naive[n]->cs*dT*(Naive[n]->active));
+                // This function, contrary to the one for the single dynamics, does not use the Time_series_Bcells array. It uses the variable cs of the Bcell Class.
+                //Time_series_Bcells[n][t] = Time_series_Bcells[n][t-1] + (nu*Time_series_Bcells[n][t-1])*dT*(Naive[n]->active); // this uses the time_series arrays
+                if(Naive[n]->active == 0){
+                    f = (Time_series_Antigen[t]/N_A)/((Time_series_Antigen[t]/N_A) + exp(25+Naive[n]->e));
+                    if(f>0.5){
+                        Naive[n]->active = 1;
+                        n_active_linages_t++;
+                        n_active_linages++;
+                    }
+                }else{
+                    N_active_bcells = N_active_bcells + Naive[n]->cs;
+                }
+            }
+            N_active_linages[t] = N_active_linages[t] + n_active_linages_t;
+        }
+        N_final_active_linages.push_back(n_active_linages);
+    } else {
+        for(int t = 1; t< NT ; t++){ // for loop of time
+            //Update the antigen
+            Time_series_Antigen[t] = Time_series_Antigen[t-1] + (eta*2000 - gamma*Time_series_Antigen[t-1]*N_active_bcells)*dT;
+            if(Time_series_Antigen[t]<1){
+                Time_series_Antigen[t] = 0;
+            }
+            N_active_bcells = 0;
+            n_active_linages_t = 0;
+            //Update Bcells
+            for(int n = 0 ; n<n_naive ; n++){
+                Naive[n]->cs = Naive[n]->cs + (nu*Naive[n]->cs*dT*(Naive[n]->active));
+                // This function, contrary to the one for the single dynamics, does not use the Time_series_Bcells array. It uses the variable cs of the Bcell Class.
+                //Time_series_Bcells[n][t] = Time_series_Bcells[n][t-1] + (nu*Time_series_Bcells[n][t-1])*dT*(Naive[n]->active); // this uses the time_series arrays
+                if(Naive[n]->active == 0){
+                    f = (Time_series_Antigen[t]/N_A)/((Time_series_Antigen[t]/N_A) + exp(25+Naive[n]->e));
+                    if(f>0.5){
+                        Naive[n]->active = 1;
+                        n_active_linages_t++;
+                        n_active_linages++;
+                    }
+                }else{
+                    N_active_bcells = N_active_bcells + Naive[n]->cs;
+                }
+            }
+            N_active_linages[t] = N_active_linages[t] + n_active_linages_t;
+        }
+        N_final_active_linages.push_back(n_active_linages);
+    }
+    
+}
 
 

@@ -13,83 +13,13 @@
 //----------------------------------------------------------------------------------
 using namespace std;
 
-// Function to run de set of differential equations
-void ODE(int linear, double const eta, double const nu, double const gamma, long long NT, double dT, int n_naive, vector<bcell*> & Naive, vector<vector < long double > > & Time_series_Bcells, vector < long double > & Time_series_Antigen, vector < int > & N_active_linages){
-    double p_GC = 0.10;
-    double f = 0;
-    double N_active_bcells = 0;
-    int n_active_linages = 0;
-    if (linear==0) {
-        for(int t = 1; t< NT ; t++){ // for loop of time
-            //Update the antigen
-            Time_series_Antigen[t] = Time_series_Antigen[t-1] + (eta*Time_series_Antigen[t-1] - gamma*Time_series_Antigen[t-1]*N_active_bcells)*dT;
-            if(Time_series_Antigen[t]<1){
-                Time_series_Antigen[t] = 0;
-            }
-            N_active_bcells = 0;
-            //Update Bcells
-            for(int n = 0 ; n<n_naive ; n++){
-                Time_series_Bcells[n][t] = Time_series_Bcells[n][t-1] + (nu*Time_series_Bcells[n][t-1])*dT*(Naive[n]->active);
-                if(Naive[n]->active ==0){
-                    f = (Time_series_Antigen[t]/N_A)/((Time_series_Antigen[t]/N_A) + exp(25+Naive[n]->e));
-                    if(f>0.5){
-                        Naive[n]->active = 1;
-                        n_active_linages++;
-                        double r_GC = randX(0,1);
-                        // Decide if the activated linage will have plasma or GC fate.
-                        if(r_GC<p_GC){
-                            Naive[n]->GC = 1;
-                        }
-                        else{
-                            Naive[n]->plasma = 1;
-                        }
-                    }
-                }else{
-                    N_active_bcells = N_active_bcells + Time_series_Bcells[n][t];
-                }
-            }
-            N_active_linages[t] = N_active_linages[t] + n_active_linages;
-        }
-    } else {
-        for(int t = 1; t< NT ; t++){ // for loop of time
-            //Update the antigen
-            Time_series_Antigen[t] = Time_series_Antigen[t-1] + (eta*2000 - gamma*Time_series_Antigen[t-1]*N_active_bcells)*dT;
-            if(Time_series_Antigen[t]<1){
-                Time_series_Antigen[t] = 0;
-            }
-            N_active_bcells = 0;
-            //Update Bcells
-            for(int n = 0 ; n<n_naive ; n++){
-                Time_series_Bcells[n][t] = Time_series_Bcells[n][t-1] + (nu*Time_series_Bcells[n][t-1])*dT*(Naive[n]->active);
-                if(Naive[n]->active ==0){
-                    f = (Time_series_Antigen[t]/N_A)/((Time_series_Antigen[t]/N_A) + exp(25+Naive[n]->e));
-                    if(f>0.5){
-                        Naive[n]->active = 1;
-                        n_active_linages++;
-                        double r_GC = randX(0,1);
-                        // Decide if the activated linage will have plasma or GC fate.
-                        if(r_GC<p_GC){
-                            Naive[n]->GC = 1;
-                        }
-                        else{
-                            Naive[n]->plasma = 1;
-                        }
-                    }
-                }else{
-                    N_active_bcells = N_active_bcells + Time_series_Bcells[n][t];
-                }
-            }
-            N_active_linages[t] = N_active_linages[t] + n_active_linages;
-        }
-    }
-    
-}
-
 //----------------------------------------------------------------------------------
-int main(int argc, char* argv[]) //argv has 1:L 2:N , 3:T , 4:T0 , 5:eta , 6:nu , 7:gamma , 8:linear
+int main(int argc, char* argv[]) //argv has 1:L 2:N , 3:T , 4:T0 , 5:eta , 6:nu , 7:gamma , 8:linear ; 9:type
 {
     string Text_files_path = "../../../../../Dropbox/Research/Evolution_Immune_System/Text_files/Dynamics/Single_trajectory/";
     cout<<">Running simulation of the Bcells-Antigen dynamics ..."<< endl;
+    gsl_rng * r = gsl_rng_alloc (gsl_rng_taus);
+    gsl_rng_set(r, time(NULL));
     clock_t t1,t2;
     t1=clock();
     //-----------------------------------------------------------------------------
@@ -105,10 +35,11 @@ int main(int argc, char* argv[]) //argv has 1:L 2:N , 3:T , 4:T0 , 5:eta , 6:nu 
     long long int N = atoi(argv[2]); // number of bcells
     int T = atoi(argv[3]); //number of days for the simulation
     int T0 = atoi(argv[4]); //initial number of days for the simulation
-    double dT = 0.001; //time step
+    double dT = 0.005; //time step
     long long int NT = (T-T0)/dT; //number of steps
     long long A_0 = exp(eta*T0);
     int linear = atoi(argv[8]);
+    string type (argv[9]);
 
     //------------Energy Matrix------------------------------------------------------
     vector < vector < double > > MJ;
@@ -157,7 +88,7 @@ int main(int argc, char* argv[]) //argv has 1:L 2:N , 3:T , 4:T0 , 5:eta , 6:nu 
     //Array with Naive-specific Bcells
     vector < bcell* > Naive;
     int n_naive = 0;
-    choose_naive_Bcells(N, L, L_alphabet, MJ, Antigen, Bcells, Naive, n_naive);
+    choose_naive_Bcells(N, L, L_alphabet, MJ, Antigen, Bcells, Naive, n_naive, type, r);
     
     //Matrix with the time series of the antigen-specific Bcells
     vector<vector < long double > > Time_series_Bcells;
@@ -189,10 +120,10 @@ int main(int argc, char* argv[]) //argv has 1:L 2:N , 3:T , 4:T0 , 5:eta , 6:nu 
     //Output files
     
  
-    ofstream fout (Text_files_path+"energies_L-"+std::to_string(L)+"_N-"+ std::to_string(N)+"_Antigen-"+Antigen_aa+"_Linear-"+std::to_string(linear)+".txt");
-    ofstream fout_antigen (Text_files_path+"antigen_L-"+std::to_string(L)+"_N-"+ std::to_string(N)+"_Antigen-"+Antigen_aa+"_eta-"+std::to_string(eta)+"_nu-"+std::to_string(nu)+"_gamma-"+std::to_string(gamma)+"_Linear-"+std::to_string(linear)+".txt");
-    ofstream fout_bcells (Text_files_path+"bcells_L-"+std::to_string(L)+"_N-"+ std::to_string(N)+"_Antigen-"+Antigen_aa+"_eta-"+std::to_string(eta)+"_nu-"+std::to_string(nu)+"_gamma-"+std::to_string(gamma)+"_Linear-"+std::to_string(linear)+".txt");
-    ofstream fout_N_active_linages (Text_files_path+"N_active_linages_L-"+std::to_string(L)+"_N-"+ std::to_string(N)+"_Antigen-"+Antigen_aa+"_eta-"+std::to_string(eta)+"_nu-"+std::to_string(nu)+"_gamma-"+std::to_string(gamma)+"_Linear-"+std::to_string(linear)+".txt");
+    ofstream fout (Text_files_path+"energies_L-"+std::to_string(L)+"_N-"+ std::to_string(N)+"_Antigen-"+Antigen_aa+"_Linear-"+std::to_string(linear)+"_"+type+".txt");
+    ofstream fout_antigen (Text_files_path+"antigen_L-"+std::to_string(L)+"_N-"+ std::to_string(N)+"_Antigen-"+Antigen_aa+"_eta-"+std::to_string(eta)+"_nu-"+std::to_string(nu)+"_gamma-"+std::to_string(gamma)+"_Linear-"+std::to_string(linear)+"_"+type+".txt");
+    ofstream fout_bcells (Text_files_path+"bcells_L-"+std::to_string(L)+"_N-"+ std::to_string(N)+"_Antigen-"+Antigen_aa+"_eta-"+std::to_string(eta)+"_nu-"+std::to_string(nu)+"_gamma-"+std::to_string(gamma)+"_Linear-"+std::to_string(linear)+"_"+type+".txt");
+    ofstream fout_N_active_linages (Text_files_path+"N_active_linages_L-"+std::to_string(L)+"_N-"+ std::to_string(N)+"_Antigen-"+Antigen_aa+"_eta-"+std::to_string(eta)+"_nu-"+std::to_string(nu)+"_gamma-"+std::to_string(gamma)+"_Linear-"+std::to_string(linear)+"_"+type+".txt");
 
     
     // Run ODE

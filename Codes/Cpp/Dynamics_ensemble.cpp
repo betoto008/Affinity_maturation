@@ -13,77 +13,13 @@
 //----------------------------------------------------------------------------------
 using namespace std;
 
-// Function to run de set of differential equations
-void ODE_ensemble(int linear, double const eta, double const nu, double const gamma, long long NT, double dT, int n_naive, vector<bcell*> & Naive, vector < long double > & Time_series_Antigen, vector < double > & N_active_linages, vector <double> & N_final_active_linages){
-    double f = 0;
-    double N_active_bcells = 0;
-    int n_active_linages_t = 0; 
-    int n_active_linages = 0;
-    if (linear==0) {
-        for(int t = 1; t< NT ; t++){ // for loop of time
-            //Update the antigen
-            Time_series_Antigen[t] = Time_series_Antigen[t-1] + (eta*Time_series_Antigen[t-1] - gamma*Time_series_Antigen[t-1]*N_active_bcells)*dT;
-            if(Time_series_Antigen[t]<1){
-                Time_series_Antigen[t] = 0;
-            }
-            N_active_bcells = 0;
-            n_active_linages_t = 0;
-            //Update Bcells
-            for(int n = 0 ; n<n_naive ; n++){
-                Naive[n]->cs = Naive[n]->cs + (nu*Naive[n]->cs*dT*(Naive[n]->active));
-                // This function, contrary to the one for the single dynamics, does not use the Time_series_Bcells array. It uses the variable cs of the Bcell Class.
-                //Time_series_Bcells[n][t] = Time_series_Bcells[n][t-1] + (nu*Time_series_Bcells[n][t-1])*dT*(Naive[n]->active); // this uses the time_series arrays
-                if(Naive[n]->active == 0){
-                    f = (Time_series_Antigen[t]/N_A)/((Time_series_Antigen[t]/N_A) + exp(25+Naive[n]->e));
-                    if(f>0.5){
-                        Naive[n]->active = 1;
-                        n_active_linages_t++;
-                        n_active_linages++;
-                    }
-                }else{
-                    N_active_bcells = N_active_bcells + Naive[n]->cs;
-                }
-            }
-            N_active_linages[t] = N_active_linages[t] + n_active_linages_t;
-        }
-        N_final_active_linages.push_back(n_active_linages);
-    } else {
-        for(int t = 1; t< NT ; t++){ // for loop of time
-            //Update the antigen
-            Time_series_Antigen[t] = Time_series_Antigen[t-1] + (eta*2000 - gamma*Time_series_Antigen[t-1]*N_active_bcells)*dT;
-            if(Time_series_Antigen[t]<1){
-                Time_series_Antigen[t] = 0;
-            }
-            N_active_bcells = 0;
-            n_active_linages_t = 0;
-            //Update Bcells
-            for(int n = 0 ; n<n_naive ; n++){
-                Naive[n]->cs = Naive[n]->cs + (nu*Naive[n]->cs*dT*(Naive[n]->active));
-                // This function, contrary to the one for the single dynamics, does not use the Time_series_Bcells array. It uses the variable cs of the Bcell Class.
-                //Time_series_Bcells[n][t] = Time_series_Bcells[n][t-1] + (nu*Time_series_Bcells[n][t-1])*dT*(Naive[n]->active); // this uses the time_series arrays
-                if(Naive[n]->active == 0){
-                    f = (Time_series_Antigen[t]/N_A)/((Time_series_Antigen[t]/N_A) + exp(25+Naive[n]->e));
-                    if(f>0.5){
-                        Naive[n]->active = 1;
-                        n_active_linages_t++;
-                        n_active_linages++;
-                    }
-                }else{
-                    N_active_bcells = N_active_bcells + Naive[n]->cs;
-                }
-            }
-            N_active_linages[t] = N_active_linages[t] + n_active_linages_t;
-        }
-        N_final_active_linages.push_back(n_active_linages);
-    }
-    
-}
-
 //----------------------------------------------------------------------------------
-int main(int argc, char* argv[]) //argv has 1:L , 2:N , 3:T , 4:T0 , 5:eta , 6:nu , 7:gamma , 8:N_ensemble , 9:linear
+int main(int argc, char* argv[]) //argv has 1:L , 2:N , 3:T , 4:T0 , 5:eta , 6:nu , 7:gamma , 8:N_ensemble , 9:linear , 10:type
 {
     string Text_files_path = "../../../../../Dropbox/Research/Evolution_Immune_System/Text_files/Dynamics/Ensemble/";
     cout<<">Running simulation of the Bcells-Antigen dynamics ..."<< endl;
+    gsl_rng * r = gsl_rng_alloc (gsl_rng_taus);
+    gsl_rng_set(r, time(NULL));
     clock_t t1,t2;
     t1=clock();
     //-----------------------------------------------------------------------------
@@ -104,6 +40,7 @@ int main(int argc, char* argv[]) //argv has 1:L , 2:N , 3:T , 4:T0 , 5:eta , 6:n
     long long int N_ensemble = atoi(argv[8]);
     long long A_0 = exp(eta*T0);
     int linear = atoi(argv[9]);
+    string type (argv[10]);
     
 
     //------------Energy Matrix------------------------------------------------------
@@ -161,11 +98,11 @@ int main(int argc, char* argv[]) //argv has 1:L , 2:N , 3:T , 4:T0 , 5:eta , 6:n
     vector <double> N_final_active_linages;
     
     //Output files
-    ofstream fout (Text_files_path+"energies_tail_ensemble_L-"+std::to_string(L)+"_N-"+ std::to_string(N)+"_Antigen-"+Antigen_aa+"_Linear-"+std::to_string(linear)+".txt"); // Energies
+    ofstream fout (Text_files_path+"energies_tail_ensemble_L-"+std::to_string(L)+"_N-"+ std::to_string(N)+"_Antigen-"+Antigen_aa+"_Linear-"+std::to_string(linear)+"_"+type+".txt"); // Energies
     
-    ofstream fout_bcells (Text_files_path+"bcells_ensemble_L-"+std::to_string(L)+"_N-"+ std::to_string(N)+"_Antigen-"+Antigen_aa+"_eta-"+std::to_string(eta)+"_nu-"+std::to_string(nu)+"_gamma-"+std::to_string(gamma)+"_Linear-"+std::to_string(linear)+".txt"); // B cells final clone size
+    ofstream fout_bcells (Text_files_path+"bcells_ensemble_L-"+std::to_string(L)+"_N-"+ std::to_string(N)+"_Antigen-"+Antigen_aa+"_eta-"+std::to_string(eta)+"_nu-"+std::to_string(nu)+"_gamma-"+std::to_string(gamma)+"_Linear-"+std::to_string(linear)+"_"+type+".txt"); // B cells final clone size
     
-    ofstream fout_N_final_active (Text_files_path+"N_final_active_L-"+std::to_string(L)+"_N-"+ std::to_string(N)+"_Antigen-"+Antigen_aa+"_eta-"+std::to_string(eta)+"_nu-"+std::to_string(nu)+"_gamma-"+std::to_string(gamma)+"_Linear-"+std::to_string(linear)+".txt"); // B cells final clone size
+    ofstream fout_N_final_active (Text_files_path+"N_final_active_L-"+std::to_string(L)+"_N-"+ std::to_string(N)+"_Antigen-"+Antigen_aa+"_eta-"+std::to_string(eta)+"_nu-"+std::to_string(nu)+"_gamma-"+std::to_string(gamma)+"_Linear-"+std::to_string(linear)+"_"+type+".txt"); // B cells final clone size
     
     // ------------ Run ensemble of trajectories ------------
     cout << "Running ensemble of trajectories ..." << endl;
@@ -177,7 +114,7 @@ int main(int argc, char* argv[]) //argv has 1:L , 2:N , 3:T , 4:T0 , 5:eta , 6:n
         // Choose the antigen-specific bcells
         vector < bcell* > Naive;
         int n_naive = 0;
-        choose_naive_Bcells(N, L, L_alphabet, MJ, Antigen, Bcells, Naive, n_naive);
+        choose_naive_Bcells(N, L, L_alphabet, MJ, Antigen, Bcells, Naive, n_naive, type, r);
         
         //initialize time series arrays
         if (linear==0) {
@@ -210,7 +147,7 @@ int main(int argc, char* argv[]) //argv has 1:L , 2:N , 3:T , 4:T0 , 5:eta , 6:n
     }
     
     //print in file the time series of the average of the number of activated bcell linages.
-    ofstream fout_N_active_linages (Text_files_path+"N_active_linages_ensemble_L-"+std::to_string(L)+"_N-"+ std::to_string(N)+"_Antigen-"+Antigen_aa+"_eta-"+std::to_string(eta)+"_nu-"+std::to_string(nu)+"_gamma-"+std::to_string(gamma)+"_Linear-"+std::to_string(linear)+".txt");
+    ofstream fout_N_active_linages (Text_files_path+"N_active_linages_ensemble_L-"+std::to_string(L)+"_N-"+ std::to_string(N)+"_Antigen-"+Antigen_aa+"_eta-"+std::to_string(eta)+"_nu-"+std::to_string(nu)+"_gamma-"+std::to_string(gamma)+"_Linear-"+std::to_string(linear)+"_"+type+".txt");
     
     for (int t= 0; t<NT; t++)
     {
