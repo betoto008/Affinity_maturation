@@ -13,8 +13,10 @@
 
 int main(int argc, char* argv[]) //argv has 1:L ; 2:N_ensemble ;
 {
-    string Text_files_path = "../../../../../Dropbox/Research/Evolution_Immune_System/Text_files/Antigen_wandering/";
+    string Text_files_path = "../../../../../Dropbox/Research/Evolution_Immune_System/Text_files/Abs_wandering/";
     cout<<">Running simulation of Antigen random walk ..."<< endl;
+    gsl_rng * r = gsl_rng_alloc (gsl_rng_taus);
+    gsl_rng_set(r, time(NULL));
     clock_t t1,t2;
     t1=clock();
     //-----------------------------------------------------------------------------
@@ -130,13 +132,13 @@ int main(int argc, char* argv[]) //argv has 1:L ; 2:N_ensemble ;
             mutate_sequence(L, L_alphabet, Memory5);
         }
         
-        E_memory = Energy(L, L_alphabet, MJ, Memory, Antigen);
-        E_memory1 = Energy(L, L_alphabet, MJ, Memory1, Antigen);
-        E_memory2 = Energy(L, L_alphabet, MJ, Memory2, Antigen);
-        E_memory3 = Energy(L, L_alphabet, MJ, Memory3, Antigen);
-        E_memory4 = Energy(L, L_alphabet, MJ, Memory4, Antigen);
-        E_memory5 = Energy(L, L_alphabet, MJ, Memory5, Antigen);
-        E_MS = Energy(L, L_alphabet, MJ, MS, Antigen);
+        E_memory = Energy(L, L_alphabet, MJ, Memory, Antigen, "MJ", r);
+        E_memory1 = Energy(L, L_alphabet, MJ, Memory1, Antigen, "MJ", r);
+        E_memory2 = Energy(L, L_alphabet, MJ, Memory2, Antigen, "MJ", r);
+        E_memory3 = Energy(L, L_alphabet, MJ, Memory3, Antigen, "MJ", r);
+        E_memory4 = Energy(L, L_alphabet, MJ, Memory4, Antigen, "MJ", r);
+        E_memory5 = Energy(L, L_alphabet, MJ, Memory5, Antigen, "MJ", r);
+        E_MS = Energy(L, L_alphabet, MJ, MS, Antigen, "MJ", r);
         
         
         fout << E_memory - E_MS << "\t";
@@ -148,15 +150,22 @@ int main(int argc, char* argv[]) //argv has 1:L ; 2:N_ensemble ;
         fout_MS << E_MS << "\t";
         
         for (int t = 0; t<T; t++) {
-            mutate_sequence(L, L_alphabet, Antigen);
-            find_complementary(L, L_alphabet, MJ, Antigen, MS);
-            E_memory = Energy(L, L_alphabet, MJ, Memory, Antigen);
-            E_memory1 = Energy(L, L_alphabet, MJ, Memory1, Antigen);
-            E_memory2 = Energy(L, L_alphabet, MJ, Memory2, Antigen);
-            E_memory3 = Energy(L, L_alphabet, MJ, Memory3, Antigen);
-            E_memory4 = Energy(L, L_alphabet, MJ, Memory4, Antigen);
-            E_memory5 = Energy(L, L_alphabet, MJ, Memory5, Antigen);
-            E_MS = Energy(L, L_alphabet, MJ, MS, Antigen);
+            mutate_sequence(L, L_alphabet, Memory);
+            mutate_sequence(L, L_alphabet, Memory1);
+            mutate_sequence(L, L_alphabet, Memory2);
+            mutate_sequence(L, L_alphabet, Memory3);
+            mutate_sequence(L, L_alphabet, Memory4);
+            mutate_sequence(L, L_alphabet, Memory5);
+            
+            E_memory = Energy(L, L_alphabet, MJ, Memory, Antigen, "MJ", r);
+            E_memory1 = Energy(L, L_alphabet, MJ, Memory1, Antigen, "MJ", r);
+            E_memory2 = Energy(L, L_alphabet, MJ, Memory2, Antigen, "MJ", r);
+            E_memory3 = Energy(L, L_alphabet, MJ, Memory3, Antigen, "MJ", r);
+            E_memory4 = Energy(L, L_alphabet, MJ, Memory4, Antigen, "MJ", r);
+            E_memory5 = Energy(L, L_alphabet, MJ, Memory5, Antigen, "MJ", r);
+            
+            E_MS = Energy(L, L_alphabet, MJ, MS, Antigen, "MJ", r);
+            
             fout << E_memory - E_MS << "\t";
             fout1 << E_memory1 - E_MS << "\t";
             fout2 << E_memory2 - E_MS << "\t";
