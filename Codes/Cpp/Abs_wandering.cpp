@@ -41,7 +41,7 @@ int main(int argc, char* argv[]) //argv has 1:L ; 2:N_ensemble ;
     //Array with the Alphabet
     vector < string > Alphabet;
     Alphabet.resize(L_alphabet);
-    ifstream file2("../Input_files/Alphabet.txt");
+    ifstream file2("../Input_files/Alphabet_20.txt");
     cout << "The Alphabet is :";
     for (int k = 0; k < L_alphabet; k++) {
 
@@ -80,6 +80,36 @@ int main(int argc, char* argv[]) //argv has 1:L ; 2:N_ensemble ;
     
     vector < int > MS;
     MS.resize(L);
+
+    // Just to check MS of a MS
+    aa_to_positions(L, L_alphabet, Alphabet, Antigen, Antigen_aa);
+    vector < int > MSMS;
+    MSMS.resize(L);
+    find_complementary(L, L_alphabet, MJ, Antigen, MS);
+    for (int k= 0; k<L; k++)
+    {
+        cout << Alphabet[MS[k]];
+    };
+    cout << endl;
+    for (int k= 0; k<L; k++)
+    {
+        cout << MS[k];
+    };
+    cout << endl;
+    cout << Energy(L, L_alphabet, MJ, MS, Antigen, "MJ", r) << endl;
+    find_complementary(L, L_alphabet, MJ, MS, MSMS);
+    for (int k= 0; k<L; k++)
+    {
+        cout << Alphabet[MSMS[k]];
+    };
+    cout << endl;
+    for (int k= 0; k<L; k++)
+    {
+        cout << MSMS[k];
+    };
+    cout << endl;
+    cout << Energy(L, L_alphabet, MJ, MSMS, MS, "MJ", r) << endl;
+    //---------------------------------------
     
     double E_memory = 0;
     double E_memory1 = 0;
@@ -117,6 +147,7 @@ int main(int argc, char* argv[]) //argv has 1:L ; 2:N_ensemble ;
         find_complementary(L, L_alphabet, MJ, Antigen, Memory5);
         find_complementary(L, L_alphabet, MJ, Antigen, MS);
         
+        // create imperfectly maturated memory
         mutate_sequence(L, L_alphabet, Memory1);
         
         mutate_sequence(L, L_alphabet, Memory2);
@@ -131,6 +162,7 @@ int main(int argc, char* argv[]) //argv has 1:L ; 2:N_ensemble ;
         for (int i = 0; i<100; i++) {
             mutate_sequence(L, L_alphabet, Memory5);
         }
+        //---------------------------------------
         
         E_memory = Energy(L, L_alphabet, MJ, Memory, Antigen, "MJ", r);
         E_memory1 = Energy(L, L_alphabet, MJ, Memory1, Antigen, "MJ", r);

@@ -558,7 +558,7 @@ def plot_energy_matrix(Energy_Matrix, Alphabet, title, ax):
 	
 	Alphabet = Alphabet
 
-	sns.heatmap(np.flip(M, axis = 0), ax = ax, cmap=plt.cm.RdBu_r, center = 0, cbar = True)
+	sns.heatmap(np.flip(M, axis = 0), ax = ax, cmap=plt.cm.viridis, center = 0, cbar = True)
 	ax.set_title(title, fontsize = 22)
 	ax.tick_params(labelsize = 20)
 	ax.set_xticklabels(Alphabet)

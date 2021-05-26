@@ -104,7 +104,6 @@ void aa_to_positions( int const & L, int const & L_alphabet, vector< string > & 
 //Function to calculate complementary sequence
 void find_complementary(int const & L, int const & L_alphabet, vector< vector<double> > const & MJ, vector< int > const & sequence, vector<int> & complementary_sequence)
 {
-    //cout << "The complementary sequence is: ";
     for(int i=0; i<L ; i++){
         vector < double > v;
         v.resize(L);
@@ -112,7 +111,6 @@ void find_complementary(int const & L, int const & L_alphabet, vector< vector<do
         int index = std::min_element(v.begin(), v.end()) - v.begin();
         complementary_sequence[i] = index;
     }
-    //cout << "\n";
 };
 
 // Function to return energies < E_max

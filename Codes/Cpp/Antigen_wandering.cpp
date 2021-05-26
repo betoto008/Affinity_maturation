@@ -115,6 +115,7 @@ int main(int argc, char* argv[]) //argv has 1:L ; 2:N_ensemble ;
         find_complementary(L, L_alphabet, MJ, Antigen, Memory5);
         find_complementary(L, L_alphabet, MJ, Antigen, MS);
         
+        // create imperfectly maturated memory
         mutate_sequence(L, L_alphabet, Memory1);
         
         mutate_sequence(L, L_alphabet, Memory2);
@@ -129,6 +130,7 @@ int main(int argc, char* argv[]) //argv has 1:L ; 2:N_ensemble ;
         for (int i = 0; i<100; i++) {
             mutate_sequence(L, L_alphabet, Memory5);
         }
+        //---------------------------------------
         
         E_memory = Energy(L, L_alphabet, MJ, Memory, Antigen);
         E_memory1 = Energy(L, L_alphabet, MJ, Memory1, Antigen);
