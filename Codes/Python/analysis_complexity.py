@@ -43,7 +43,7 @@ for Type in Types:
             time = np.linspace(1*dt, T*dt, T)
             ax.plot(time, data, color = colors[i], linestyle = '--', label = "%d"%(i+1))
             #ax.plot(time, (1-(1-np.exp(-time))**(i+1)), color = colors[i])
-        my_plot_layout(ax=ax, xlabel = 'Steps', ylabel = "Memory lost", x_fontsize = 24, y_fontsize = 24)
+        my_plot_layout(ax=ax, xlabel = 'Steps', ylabel = "Retained memory", x_fontsize = 24, y_fontsize = 24)
         ax.set_ylim(-.1, 1.1)
         ax.legend(loc = 5, fontsize = 24)
         fig.savefig('../../Figures/4_Complexity/memory_lost_L-%d_'%(L)+Type+'.png')
