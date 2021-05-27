@@ -12,7 +12,7 @@
 #include <numeric>
 
 
-int main(int argc, char* argv[]) //argv has 0:L ; 1:L_alphabet ; 2:N_ensemble ; 3:N_epitopes_max ; 4:N_esemble
+int main(int argc, char* argv[]) //argv has 0:L ; 1:L_alphabet ; 2:N_ensemble ; 3:N_epitopes_max ; 4:N_esemble ; 5:type
 {
     string Text_files_path = "../../../../../Dropbox/Research/Evolution_Immune_System/Text_files/Complexity/";
     cout<<">Running simulation of Antigen random walk ..."<< endl;
@@ -27,7 +27,9 @@ int main(int argc, char* argv[]) //argv has 0:L ; 1:L_alphabet ; 2:N_ensemble ; 
     int L_alphabet = atoi(argv[2]); //length of the alphabet
     int N_epitopes_max = atoi(argv[3]);
     long long int N_ensemble = atoi(argv[4]); // Ensemble size
-    long long int T = 150; //Random walk time
+    long long int T; //Random walk time
+    double e_bar;
+    string type (argv[5]);
     
     //------------Energy Matrix------------------------------------------------------
     vector < vector < double > > MJ;
@@ -36,8 +38,18 @@ int main(int argc, char* argv[]) //argv has 0:L ; 1:L_alphabet ; 2:N_ensemble ; 
     {
         (MJ[k]).resize(L_alphabet);
     };
-
-    ifstream file("../Input_files/MJ2.txt");
+    ifstream file;
+    if (type == "MJ") {
+        file.open("../Input_files/MJ2.txt");
+        e_bar = 4.5;
+        T = 150;
+    }
+    else if (type == "MM"){
+        file.open("../Input_files/MM.txt");
+        e_bar = .8;
+        T = 8;
+    }
+    
     
     for (unsigned int i = 0; i < L_alphabet; i++) {
         for (unsigned int j = 0; j < L_alphabet; j++) {
@@ -102,7 +114,7 @@ int main(int argc, char* argv[]) //argv has 0:L ; 1:L_alphabet ; 2:N_ensemble ; 
                 };
                 //cout << endl;
                 //cout << endl;
-                Binding_epi_ab[n] = round(1/(1+exp(-Energy(L, L_alphabet, MJ, Abs[n], Epitopes[n], "MJ", r)-(4.5*L))));
+                Binding_epi_ab[n] = round(1/(1+exp(-Energy(L, L_alphabet, MJ, Abs[n], Epitopes[n], "MJ", r)-(e_bar*L))));
                 
             }
             
@@ -111,13 +123,13 @@ int main(int argc, char* argv[]) //argv has 0:L ; 1:L_alphabet ; 2:N_ensemble ; 
             for (int t = 0; t<T; t++) {
                 for (int n = 0; n<N_epitopes; n++) {
                     mutate_sequence(L, L_alphabet, Epitopes[n]);
-                    Binding_epi_ab[n] = round(1/(1+exp(-Energy(L, L_alphabet, MJ, Abs[n], Epitopes[n], "MJ", r)-(4.5*L))));
+                    Binding_epi_ab[n] = round(1/(1+exp(-Energy(L, L_alphabet, MJ, Abs[n], Epitopes[n], "MJ", r)-(e_bar*L))));
                 }
                 state = 1 - std::accumulate(begin(Binding_epi_ab), end(Binding_epi_ab), 1, std::multiplies<double>());
                 State[t] += state;
             }
         }
-        ofstream fout (Text_files_path+"state_L-"+std::to_string(L)+"_L_alphabet-"+std::to_string(L_alphabet)+"_N_epitopes-"+ std::to_string(N_epitopes)+".txt");
+        ofstream fout (Text_files_path+"state_L-"+std::to_string(L)+"_L_alphabet-"+std::to_string(L_alphabet)+"_N_epitopes-"+ std::to_string(N_epitopes)+"_"+type+".txt");
         
         for (int t = 0; t<T; t++) {
             //cout << State[t]/N_ensemble << "\t";
