@@ -12,7 +12,7 @@
 #include <numeric>
 
 
-int main(int argc, char* argv[]) //argv has 0:L ; 1:L_alphabet ; 2:N_ensemble ; 3:N_epitopes_max ; 4:N_esemble ; 5:type
+int main(int argc, char* argv[]) //argv has 1:L ; 2:L_alphabet ; 3:N_epitopes_max ; 4:N_esemble ; 5:type
 {
     string Text_files_path = "../../../../../Dropbox/Research/Evolution_Immune_System/Text_files/Complexity/";
     cout<<">Running simulation of Antigen random walk ..."<< endl;
@@ -47,7 +47,7 @@ int main(int argc, char* argv[]) //argv has 0:L ; 1:L_alphabet ; 2:N_ensemble ; 
     else if (type == "MM"){
         file.open("../Input_files/MM.txt");
         e_bar = .8;
-        T = 8;
+        T = 22;
     }
     
     
@@ -74,13 +74,13 @@ int main(int argc, char* argv[]) //argv has 0:L ; 1:L_alphabet ; 2:N_ensemble ; 
     vector <vector <int> > Epitopes;
     vector <vector <int> > Abs;
     vector <int> Binding_epi_ab;
-    vector <double> State;
+    vector <double> State; //Vector with the temporal evolution of the total state of escape of the system. 1:Escaping ; 0:Not escaping
     State.resize(T);
     
 
     double state;
     
-    for (int N_epitopes = 1; N_epitopes<=N_epitopes_max; N_epitopes++) {
+    for (int N_epitopes = 1; N_epitopes<=N_epitopes_max; N_epitopes++) { // Loop over the total number of epitopes
         
         Epitopes.resize(N_epitopes);
         Abs.resize(N_epitopes);
@@ -96,40 +96,36 @@ int main(int argc, char* argv[]) //argv has 0:L ; 1:L_alphabet ; 2:N_ensemble ; 
         for (int t = 0; t<T; t++) {
             State[t] = 0;
         }
-        for (int m = 0; m<N_ensemble; m++) {
-            for (int n = 0; n<N_epitopes; n++) {
+        for (int m = 0; m<N_ensemble; m++) { // Ensemble loop
+            for (int n = 0; n<N_epitopes; n++) { // Loop over epitopes
+
                 // initializing the epitopes with random sequences
                 for (int l= 0; l<L; l++)
                 {
                     Epitopes[n][l] = randIX(0,L_alphabet-1);
-                    //cout << Alphabet[Epitopes[n][l]];
                 };
-                //cout << endl;
                 
                 // initializing the abs
                 find_complementary(L, L_alphabet, MJ, Epitopes[n], Abs[n]);
-                for (int l= 0; l<L; l++)
-                {
-                    //cout << Alphabet[Abs[n][l]];
-                };
-                //cout << endl;
-                //cout << endl;
+
+                // The function round works as a step function: if p_b < .5 -> 0 ; if p_b >= 0.5 -> 1
                 Binding_epi_ab[n] = round(1/(1+exp(-Energy(L, L_alphabet, MJ, Abs[n], Epitopes[n], "MJ", r)-(e_bar*L))));
                 
             }
             
+            // if there is at least one not binded epitope, the state is 1 (escape)
             state = 1 - std::accumulate(begin(Binding_epi_ab), end(Binding_epi_ab), 1, std::multiplies<double>());
-            
-            for (int t = 0; t<T; t++) {
-                for (int n = 0; n<N_epitopes; n++) {
-                    mutate_sequence(L, L_alphabet, Epitopes[n]);
-                    Binding_epi_ab[n] = round(1/(1+exp(-Energy(L, L_alphabet, MJ, Abs[n], Epitopes[n], "MJ", r)-(e_bar*L))));
+            State[0] += state;
+            for (int t = 1; t<T; t++) { // Time loop 
+                for (int n = 0; n<N_epitopes; n++) { // Loop over epitopes
+                    mutate_sequence(L, L_alphabet, Epitopes[n]); // Mutate each epitope
+                    Binding_epi_ab[n] = round(1/(1+exp(-Energy(L, L_alphabet, MJ, Abs[n], Epitopes[n], "MJ", r)-(e_bar*L)))); // Update p_b 
                 }
                 state = 1 - std::accumulate(begin(Binding_epi_ab), end(Binding_epi_ab), 1, std::multiplies<double>());
                 State[t] += state;
             }
         }
-        ofstream fout (Text_files_path+"state_L-"+std::to_string(L)+"_L_alphabet-"+std::to_string(L_alphabet)+"_N_epitopes-"+ std::to_string(N_epitopes)+"_"+type+".txt");
+        ofstream fout (Text_files_path+"Escaping_state_L-"+std::to_string(L)+"_L_alphabet-"+std::to_string(L_alphabet)+"_N_epitopes-"+ std::to_string(N_epitopes)+"_"+type+".txt");
         
         for (int t = 0; t<T; t++) {
             //cout << State[t]/N_ensemble << "\t";
